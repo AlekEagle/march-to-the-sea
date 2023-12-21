@@ -1,19 +1,39 @@
 <template>
-  <TopToBottomSlide ref="topToBottomSlide" :duration="4000">
+  <EnterExitSlide ref="proBanner" :duration="2000">
     <img :src="professionalBanner" alt="Professional Banner" />
     <h1>Very Professional Video Games Incorporated ™©®</h1>
-  </TopToBottomSlide>
+  </EnterExitSlide>
+  <EnterExitSlide ref="iwcProd" :duration="2000" direction="right-to-left">
+    <h1>An <i>Idiots with Computers ™©®</i> Production</h1>
+  </EnterExitSlide>
+  <EnterExitSlide ref="awardWinning" :duration="2000" direction="left-to-right">
+    <h1>An Award Winning, Sad Excuse of a """"Video Game""""</h1>
+  </EnterExitSlide>
+  <EnterExitSlide ref="comingSoon" :duration="2000" direction="bottom-to-top">
+    <h1>Coming Soon To Theaters and LaserDisc...</h1>
+  </EnterExitSlide>
+  <EnterExitSlide ref="comingSoon2" :duration="2000">
+    <h1>...and also to your local Blockbuster Video™©®</h1>
+  </EnterExitSlide>
 </template>
 
 <script lang="ts" setup>
-  import TopToBottomSlide from './TopToBottomSlide.vue';
+  import EnterExitSlide from './EnterExitSlide.vue';
   import professionalBanner from '@/assets/images/lol.jpg';
   import { ref } from 'vue';
 
-  let topToBottomSlide = ref<typeof TopToBottomSlide>();
+  let proBanner = ref<typeof EnterExitSlide>(),
+    iwcProd = ref<typeof EnterExitSlide>(),
+    awardWinning = ref<typeof EnterExitSlide>(),
+    comingSoon = ref<typeof EnterExitSlide>(),
+    comingSoon2 = ref<typeof EnterExitSlide>();
 
   async function begin() {
-    await topToBottomSlide.value?.begin();
+    await proBanner.value?.begin();
+    await iwcProd.value?.begin();
+    await awardWinning.value?.begin();
+    await comingSoon.value?.begin();
+    await comingSoon2.value?.begin();
   }
 
   defineExpose({ begin });
@@ -31,7 +51,7 @@
     align-items: center;
   }
 
-  div > h1 {
+  h1 {
     /* Scale the font size to match the width of the image regardless of the screen size */
     font-size: calc(75vw / 25.5);
     font-weight: 900;

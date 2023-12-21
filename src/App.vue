@@ -11,4 +11,10 @@
   onMounted(async () => {
     await initAnim.value?.begin();
   });
+
+  window.addEventListener('beforeunload', (e) => {
+    e.preventDefault();
+    e.returnValue = '';
+    return '';
+  });
 </script>
