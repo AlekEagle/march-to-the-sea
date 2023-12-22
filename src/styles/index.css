@@ -1,3 +1,8 @@
+@font-face {
+  font-family: 'Comic Sans MS';
+  src: url('@/assets/fonts/Comic Sans MS.ttf') format('truetype');
+}
+
 :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -30,10 +35,31 @@ body {
   min-width: 320px;
   min-height: 100vh;
   overflow: hidden;
+  text-align: center;
 }
 
 h1 {
   font-size: 3.2em;
+  line-height: 1.1;
+}
+h2 {
+  font-size: 2.4em;
+  line-height: 1.1;
+}
+h3 {
+  font-size: 1.8em;
+  line-height: 1.1;
+}
+h4 {
+  font-size: 1.6em;
+  line-height: 1.1;
+}
+h5 {
+  font-size: 1.4em;
+  line-height: 1.1;
+}
+h6 {
+  font-size: 1.2em;
   line-height: 1.1;
 }
 
@@ -41,7 +67,7 @@ button {
   border-radius: 8px;
   border: 1px solid transparent;
   padding: 0.6em 1.2em;
-  font-size: 1em;
+  font-size: 2em;
   font-weight: 500;
   font-family: inherit;
   background-color: #1a1a1a;
@@ -71,4 +97,12 @@ button:focus-visible {
   button {
     background-color: #f9f9f9;
   }
+}
+
+.button-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1em;
 }

@@ -18,7 +18,7 @@
 </template>
 
 <script lang="ts" setup>
-  import EnterExitSlide from './EnterExitSlide.vue';
+  import EnterExitSlide from '@/components/Animation/EnterExitSlide.vue';
   import professionalBanner from '@/assets/images/lol.jpg';
   import { ref } from 'vue';
 
@@ -26,14 +26,42 @@
     iwcProd = ref<typeof EnterExitSlide>(),
     awardWinning = ref<typeof EnterExitSlide>(),
     comingSoon = ref<typeof EnterExitSlide>(),
-    comingSoon2 = ref<typeof EnterExitSlide>();
+    comingSoon2 = ref<typeof EnterExitSlide>(),
+    shouldStop = ref(false);
+
+  function bodyClickEventHandler() {
+    // Stop the animation if the user clicks anywhere on the page.
+    shouldStop.value = true;
+    // Stop the EnterExitSlide components animations'.
+    proBanner.value?.stop();
+    iwcProd.value?.stop();
+    awardWinning.value?.stop();
+    comingSoon.value?.stop();
+    comingSoon2.value?.stop();
+    // Stop listening for clicks.
+    document.body.removeEventListener('click', bodyClickEventHandler);
+  }
 
   async function begin() {
+    // Reset shouldStop
+    shouldStop.value = false;
+    // Listen for clicks on the page.
+    document.body.addEventListener('click', bodyClickEventHandler);
     await proBanner.value?.begin();
+    // If the animation was stopped early, immediately return.
+    if (shouldStop.value) return;
     await iwcProd.value?.begin();
+    // If the animation was stopped early, immediately return.
+    if (shouldStop.value) return;
     await awardWinning.value?.begin();
+    // If the animation was stopped early, immediately return.
+    if (shouldStop.value) return;
     await comingSoon.value?.begin();
+    // If the animation was stopped early, immediately return.
+    if (shouldStop.value) return;
     await comingSoon2.value?.begin();
+    // Stop listening for clicks.
+    document.body.removeEventListener('click', bodyClickEventHandler);
   }
 
   defineExpose({ begin });
@@ -53,9 +81,10 @@
 
   h1 {
     /* Scale the font size to match the width of the image regardless of the screen size */
+    font-family: 'Comic Sans MS', 'Comic Sans', cursive;
     font-size: calc(75vw / 25.5);
     font-weight: 900;
-    color: #ff0000;
-    text-shadow: 0 0 10px #ff0000;
+    color: #ffffff;
+    text-shadow: 0 0 6px #ffffff;
   }
 </style>
