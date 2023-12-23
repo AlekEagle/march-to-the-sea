@@ -8,19 +8,24 @@
 
 <script lang="ts" setup>
   import { ref } from 'vue';
-  import WatchOrWait from '@/utils/WatchOrWait';
+  import { wait, waitFor, watchOrWait } from '@/utils/Wait';
   import '@/styles/sliding-keyframes.css';
 
   const props = defineProps({
     duration: {
       type: Number,
-      default: 1000,
+      default: 0,
     },
     direction: {
       type: String,
       default: 'top-to-bottom',
     },
+    cancellable: {
+      type: Boolean, // If true, the slide can be stopped early by the user clicking.
+    },
   });
+
+  const emit = defineEmits(['cancelled']);
 
   const visible = ref(false),
     isAnimating = ref(false),
@@ -30,6 +35,13 @@
   function stop() {
     if (!isAnimating.value) return;
     shouldStop.value = true;
+  }
+
+  // This function is called when the user clicks to cancel the animation.
+  // Since it was non-programmatically cancelled, emit the 'cancelled' event so the parent component knows what happened.
+  async function cancelAnimation() {
+    stop();
+    emit('cancelled');
   }
 
   // This function is called by the parent component to begin the animation.
@@ -46,17 +58,25 @@
       shouldStop.value = false;
       // Set isAnimating to true
       isAnimating.value = true;
+
+      // If the animation is cancellable, add a click listener to the body.
+      if (props.cancellable) {
+        document.body.addEventListener('click', cancelAnimation, {
+          once: true,
+        });
+      }
+
       // Begin the animation by showing the element.
       visible.value = true;
 
-      // Wait for the animation to finish or for the animation to be stopped.
-      await WatchOrWait(
-        1e3, // Wait 1 second (the duration of the entrance animation)
-        shouldStop, // Watch for the animation to be stopped.
-      );
+      // Wait for the animation to finish.
+      await wait(1e3);
 
       // If the animation was stopped early, skip waiting the rest of the duration.
-      if (!shouldStop.value) await WatchOrWait(props.duration, shouldStop);
+      if (!shouldStop.value) {
+        if (props.duration > 0) await watchOrWait(props.duration, shouldStop);
+        else await waitFor(shouldStop);
+      }
 
       // Otherwise, hide the element.
       visible.value = false;
@@ -66,6 +86,11 @@
 
       // Set isAnimating to false
       isAnimating.value = false;
+
+      // Remove the click listener from the body.
+      document.body.removeEventListener('click', cancelAnimation);
+
+      // Resolve.
       resolve();
     });
   }

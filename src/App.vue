@@ -45,7 +45,7 @@
 
   async function startGame() {
     await startMenu.value?.hide();
-    gameState.state = GameState.GAME;
+    gameState.state = GameState.GAME_INTRO;
     await gameIntro.value?.show();
   }
 

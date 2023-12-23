@@ -8,16 +8,16 @@
 
 <script lang="ts" setup>
   import { ref } from 'vue';
-  import Choose from '@/utils/Choose';
+  import { choose } from '@/utils/Random';
   import '@/styles/sliding-keyframes.css';
 
   const visible = ref(false),
-    enterDirection = ref(`enter-${Choose('top', 'bottom', 'left', 'right')}`),
-    exitDirection = ref(`exit-${Choose('top', 'bottom', 'left', 'right')}`);
+    enterDirection = ref(`enter-${choose('top', 'bottom', 'left', 'right')}`),
+    exitDirection = ref(`exit-${choose('top', 'bottom', 'left', 'right')}`);
 
   function rechoose() {
-    enterDirection.value = `enter-${Choose('top', 'bottom', 'left', 'right')}`;
-    exitDirection.value = `exit-${Choose('top', 'bottom', 'left', 'right')}`;
+    enterDirection.value = `enter-${choose('top', 'bottom', 'left', 'right')}`;
+    exitDirection.value = `exit-${choose('top', 'bottom', 'left', 'right')}`;
   }
 
   async function show() {

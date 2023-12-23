@@ -1,18 +1,46 @@
 <template>
-  <EnterExitSlide ref="proBanner" :duration="2000">
+  <EnterExitSlide
+    ref="proBanner"
+    :duration="2000"
+    cancellable
+    @cancelled="bodyClickEventHandler"
+  >
     <img :src="professionalBanner" alt="Professional Banner" />
     <h1>Very Professional Video Games Incorporated ™©®</h1>
   </EnterExitSlide>
-  <EnterExitSlide ref="iwcProd" :duration="2000" direction="right-to-left">
-    <h1>An <i>Idiots with Computers ™©®</i> Production</h1>
+  <EnterExitSlide
+    ref="iwcProd"
+    :duration="2000"
+    direction="right-to-left"
+    cancellable
+    @cancelled="bodyClickEventHandler"
+  >
+    <h1>An Idiots with Computers ™©® Production</h1>
   </EnterExitSlide>
-  <EnterExitSlide ref="awardWinning" :duration="2000" direction="left-to-right">
+  <EnterExitSlide
+    ref="awardWinning"
+    :duration="2000"
+    direction="left-to-right"
+    cancellable
+    @cancelled="bodyClickEventHandler"
+  >
     <h1>An Award Winning, Sad Excuse of a """"Video Game""""</h1>
   </EnterExitSlide>
-  <EnterExitSlide ref="comingSoon" :duration="2000" direction="bottom-to-top">
+  <EnterExitSlide
+    ref="comingSoon"
+    :duration="2000"
+    direction="bottom-to-top"
+    cancellable
+    @cancelled="bodyClickEventHandler"
+  >
     <h1>Coming Soon To Theaters and LaserDisc...</h1>
   </EnterExitSlide>
-  <EnterExitSlide ref="comingSoon2" :duration="2000">
+  <EnterExitSlide
+    ref="comingSoon2"
+    :duration="2000"
+    cancellable
+    @cancelled="bodyClickEventHandler"
+  >
     <h1>...and also to your local Blockbuster Video™©®</h1>
   </EnterExitSlide>
 </template>
@@ -32,21 +60,12 @@
   function bodyClickEventHandler() {
     // Stop the animation if the user clicks anywhere on the page.
     shouldStop.value = true;
-    // Stop the EnterExitSlide components animations'.
-    proBanner.value?.stop();
-    iwcProd.value?.stop();
-    awardWinning.value?.stop();
-    comingSoon.value?.stop();
-    comingSoon2.value?.stop();
-    // Stop listening for clicks.
-    document.body.removeEventListener('click', bodyClickEventHandler);
   }
 
   async function begin() {
     // Reset shouldStop
     shouldStop.value = false;
-    // Listen for clicks on the page.
-    document.body.addEventListener('click', bodyClickEventHandler);
+    // Listen for clicks on the page
     await proBanner.value?.begin();
     // If the animation was stopped early, immediately return.
     if (shouldStop.value) return;
@@ -60,8 +79,6 @@
     // If the animation was stopped early, immediately return.
     if (shouldStop.value) return;
     await comingSoon2.value?.begin();
-    // Stop listening for clicks.
-    document.body.removeEventListener('click', bodyClickEventHandler);
   }
 
   defineExpose({ begin });
