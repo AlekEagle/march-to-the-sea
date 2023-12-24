@@ -1,11 +1,11 @@
 <template>
   <MenuSlide ref="menuSlide">
     <h1>A March to the Sea</h1>
-    <h2>The Video Game</h2>
+    <h2>The Game</h2>
 
     <div class="button-container">
-      <button @click="emit('start')">Play</button>
-      <button @click="emit('about')">About</button>
+      <button @click="start">Play</button>
+      <button @click="about">About</button>
     </div>
   </MenuSlide>
 </template>
@@ -13,21 +13,29 @@
 <script lang="ts" setup>
   // Vue Components
   import MenuSlide from '@/components/Animation/MenuSlide.vue';
-
+  // Stores
+  import useGame from '@/stores/GameStateMachine';
+  // Data
+  import GameState from '@/data/GameState';
   // Other
   import { ref } from 'vue';
 
-  const menuSlide = ref<typeof MenuSlide>();
+  const game = useGame(),
+    menuSlide = ref<typeof MenuSlide>();
 
-  const emit = defineEmits(['start', 'about']);
-
-  function show(): Promise<void> {
-    return menuSlide.value?.show();
+  function show() {
+    menuSlide.value?.show();
   }
 
-  function hide(): Promise<void> {
-    return menuSlide.value?.hide();
+  async function start() {
+    await menuSlide.value?.hide();
+    game.state = GameState.GAME_INTRO;
   }
 
-  defineExpose({ show, hide });
+  async function about() {
+    await menuSlide.value?.hide();
+    game.state = GameState.ABOUT;
+  }
+
+  game.subscribe(show, GameState.START_MENU);
 </script>

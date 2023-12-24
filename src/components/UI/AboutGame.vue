@@ -8,30 +8,33 @@
       your supplies, your soldiers, and your reputation as you march through the
       Confederacy.
     </p>
-    <button @click="emit('close')">Back</button>
+    <button @click="close">Back</button>
   </MenuSlide>
 </template>
 
 <script lang="ts" setup>
   // Vue Components
   import MenuSlide from '@/components/Animation/MenuSlide.vue';
-
+  // Stores
+  import useGame from '@/stores/GameStateMachine';
+  // Data
+  import GameState from '@/data/GameState';
   // Other
   import { ref } from 'vue';
 
-  const menuSlide = ref<typeof MenuSlide>();
+  const game = useGame(),
+    menuSlide = ref<typeof MenuSlide>();
 
-  const emit = defineEmits(['close']);
-
-  function show(): Promise<void> {
-    return menuSlide.value?.show();
+  async function close() {
+    await menuSlide.value?.hide();
+    game.state = GameState.START_MENU;
   }
 
-  function hide(): Promise<void> {
-    return menuSlide.value?.hide();
+  function show() {
+    menuSlide.value?.show();
   }
 
-  defineExpose({ show, hide });
+  game.subscribe(show, GameState.ABOUT);
 </script>
 
 <style scoped>

@@ -1,6 +1,10 @@
 <template>
   <Transition name="menu-slide">
-    <div v-if="visible" :class="`${enterDirection} ${exitDirection}`">
+    <div
+      v-bind="$attrs"
+      v-if="visible"
+      :class="`${enterDirection} ${exitDirection}`"
+    >
       <slot />
     </div>
   </Transition>
@@ -10,6 +14,10 @@
   import { ref } from 'vue';
   import { choose } from '@/utils/Random';
   import '@/styles/sliding-keyframes.css';
+
+  defineOptions({
+    inheritAttrs: false,
+  });
 
   const visible = ref(false),
     enterDirection = ref(`enter-${choose('top', 'bottom', 'left', 'right')}`),

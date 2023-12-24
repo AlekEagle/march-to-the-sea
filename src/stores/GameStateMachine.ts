@@ -1,141 +1,50 @@
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 
-export enum GameState {
-  INTRO,
-  START_MENU,
-  GAME_INTRO,
-  GAME,
-  ABOUT,
-}
+// === Constants ===
+import GameState from '@/data/GameState';
+import { MarchingSpeed } from '@/data/MarchingSpeeds';
+import SUPPLY_COSTS, { SupplyType } from '@/data/SupplyCosts';
+import DESTINATIONS, { Destination } from '@/data/Destinations';
+import MilitaryForces from '@/data/MilitaryForces';
+import Union from '@/data/MilitaryForces/Union';
+import Confederacy from '@/data/MilitaryForces/Confederacy';
+import GameDate, { Months } from '@/data/GameDate';
 
-// ===== Constants =====
+const DEFAULT_MARCH_SPEED = 'leisurely';
 
-// === Random Event Chances ===
-
-// === Marching Speeds ===
-export const MARCHING_SPEEDS = {
-  leisurely: {
-    value: 2, // Miles per day
-    injuryChance: 0, // Percent chance of a soldier injuring themselves at this pace while marching
-  },
-  normal: {
-    value: 4,
-    injuryChance: 2,
-  },
-  fast: {
-    value: 6,
-    injuryChance: 8,
-  },
-  grueling: {
-    value: 8,
-    injuryChance: 20,
-  },
-};
-
-// === Supply Costs ===
-export const SUPPLY_COSTS = {
-  food: {
-    value: 25, // Dollars per unit
-    amount: 62_000, // Amount of supplies per unit
-  },
-  bullets: {
-    value: 9.5,
-    amount: 62_000,
-  },
-  powder: {
-    value: 7.5,
-    amount: 62_000,
-  },
-  medkits: {
-    value: 35,
-    amount: 50,
-  },
-};
-
-export const IntermediateDestinations = [
-  {
-    name: 'Atlanta', // The name of the destination
-    distance: 0, // Miles from Atlanta
-  },
-  {
-    name: 'Decatur',
-    distance: 6,
-  },
-  {
-    name: 'McDonough',
-    distance: 36,
-  },
-  {
-    name: 'Covington',
-    distance: 58,
-  },
-  {
-    name: 'Monticello',
-    distance: 84,
-  },
-  {
-    name: 'Madison',
-    distance: 110,
-  },
-  {
-    name: 'Eatonton',
-    distance: 133,
-  },
-  {
-    name: 'Milledgeville',
-    distance: 154,
-  },
-  {
-    name: 'Gordon',
-    distance: 170,
-  },
-  {
-    name: 'Irwinton',
-    distance: 182,
-  },
-  {
-    name: 'Sandersville',
-    distance: 224,
-  },
-  {
-    name: 'Louisville',
-    distance: 240,
-  },
-  {
-    name: 'Millen',
-    distance: 275,
-  },
-  {
-    name: 'Fort McAllister',
-    distance: 371,
-  },
-  {
-    name: 'Savannah',
-    distance: 400,
-  },
-];
-
-const useGameState = defineStore('game-state-machine', () => {
+const useGame = defineStore('game-state-machine', () => {
   // Game State Variables & Methods
+  // === Refs ===
   const state = ref(GameState.INTRO),
-    soldiers = ref({
-      alive: 62_000,
-      injured: {
-        exhaustion: 0,
-      },
-      dead: 0,
-    }),
-    money = ref(500),
+    stateSubscribers: Array<(state: GameState) => void> = [],
+    // == Military Forces ==
+    // Union data
+    union = ref<MilitaryForces>(Object.assign({}, Union)), // Create a clone of the Union object since we'll be modifying it
+    // Confederacy data
+    confederacy = ref<MilitaryForces>(Object.assign({}, Confederacy)), // Create a clone of the Confederacy object since we'll be modifying it
+    // == Game State Variables ==
+    money = ref(5_000),
+    days = ref(new GameDate(Months.November, 15)),
     distance = ref(0), // Miles from Atlanta
-    marchSpeed = ref<keyof typeof MARCHING_SPEEDS>('leisurely'),
+    marchSpeed = ref<MarchingSpeed>(DEFAULT_MARCH_SPEED),
+    supplies = ref({
+      food: 0, // 1 unit of food = 1 day of food for 1 soldier
+      bullets: 0, // 1 unit of bullets = 1 pouch of bullets for 1 soldier (1 pouch = 20 bullets)
+      powder: 0, // 1 unit of powder = 1 pouch of powder for 1 soldier (1 pouch = 20 shots)
+      medkits: 0, // 1 unit of medkits = 1 medkit for 1 soldier
+    }),
+    // === Computed Values ===
+    // == Destinations ==
+    // Destinations that have been visited
     visitedDestinations = computed(() =>
-      IntermediateDestinations.filter(
+      DESTINATIONS.filter(
         (destination) => destination.distance <= distance.value,
       ),
     ),
+    // Destinations that have not been visited
     unvisitedDestinations = computed(() =>
-      IntermediateDestinations.filter(
+      DESTINATIONS.filter(
         (destination) =>
           !visitedDestinations.value.some(
             (visitedDestination) =>
@@ -143,19 +52,29 @@ const useGameState = defineStore('game-state-machine', () => {
           ),
       ),
     ),
-    previousDestination = computed(
+    // The most recently visited destination
+    previousDestination = computed<Destination>(
       () => visitedDestinations.value[visitedDestinations.value.length - 1],
     ),
-    nextDestination = computed(() => unvisitedDestinations.value[0]),
-    confederatePower = ref(100), // 100% = 100% power
-    supplies = ref({
-      food: 0, // 1 unit of food = 1 day of food for 1 soldier
-      bullets: 0, // 1 unit of bullets = 1 pouch of bullets for 1 soldier (1 pouch = 20 bullets)
-      powder: 0, // 1 unit of powder = 1 pouch of powder for 1 soldier (1 pouch = 20 shots)
-      medkits: 0, // 1 unit of medkits = 1 medkit for 1 soldier
-    });
+    // The next destination to visit
+    nextDestination = computed<Destination>(
+      () => unvisitedDestinations.value[0],
+    );
 
-  function purchaseSupplies(type: keyof typeof supplies.value, amount: number) {
+  // == Subscriptions ==
+  // Subscribe to changes in the game state
+  function subscribe(callback: (state: GameState) => void, state?: GameState) {
+    stateSubscribers.push((newState) => {
+      if (state === undefined || state === newState) callback(newState);
+    });
+  }
+
+  // Game state watcher
+  watch(state, (newState) => {
+    stateSubscribers.forEach((subscriber) => subscriber(newState));
+  });
+
+  function purchaseSupplies(type: SupplyType, amount: number) {
     supplies.value[type] += amount * SUPPLY_COSTS[type].amount;
     money.value -= amount * SUPPLY_COSTS[type].value;
   }
@@ -197,16 +116,18 @@ const useGameState = defineStore('game-state-machine', () => {
   return {
     // Game State Variables & Methods
     state,
-    soldiers,
+    union,
+    confederacy,
     money,
+    days,
     distance,
     marchSpeed,
     visitedDestinations,
     unvisitedDestinations,
     previousDestination,
     nextDestination,
-    confederatePower,
     supplies,
+    subscribe,
     purchaseSupplies,
     // Speech Box Variables & Methods
     speechBox,
@@ -217,4 +138,4 @@ const useGameState = defineStore('game-state-machine', () => {
   };
 });
 
-export default useGameState;
+export default useGame;

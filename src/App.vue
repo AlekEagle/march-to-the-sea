@@ -1,12 +1,13 @@
 <template>
-  <InitialAnimation ref="initAnim" />
-  <StartMenu @start="startGame" @about="showAbout" ref="startMenu" />
-  <AboutGame @close="hideAbout" ref="aboutGame" />
-  <GameIntro ref="gameIntro" />
+  <InitialAnimation />
+  <StartMenu />
+  <AboutGame />
+  <GameIntro />
+  <RequisitionSupplies />
   <Transition name="speech-box">
-    <div v-if="gameState.speechBox" class="speech-box">
-      <h3 v-text="gameState.speechBoxTitle" />
-      <p v-text="gameState.speechBoxTextToDisplay" />
+    <div v-if="game.speechBox" class="speech-box">
+      <h3 v-text="game.speechBoxTitle" />
+      <p v-text="game.speechBoxTextToDisplay" />
     </div>
   </Transition>
 </template>
@@ -17,24 +18,11 @@
   import StartMenu from '@/components/UI/StartMenu.vue';
   import AboutGame from '@/components/UI/AboutGame.vue';
   import GameIntro from '@/components/UI/GameIntro.vue';
+  import RequisitionSupplies from './components/UI/RequisitionSupplies.vue';
   // Stores
-  import useGameState, { GameState } from '@/stores/GameStateMachine';
-  // Other
-  import { ref, onMounted } from 'vue';
+  import useGame from '@/stores/GameStateMachine';
 
-  const gameState = useGameState(),
-    initAnim = ref<typeof InitialAnimation>(),
-    startMenu = ref<typeof StartMenu>(),
-    aboutGame = ref<typeof AboutGame>(),
-    gameIntro = ref<typeof GameIntro>();
-
-  onMounted(async () => {
-    // Begin the initial animation.
-    await initAnim.value?.begin();
-    // Once the initial animation is finished, change the game state to the start menu.
-    gameState.state = GameState.START_MENU;
-    await startMenu.value?.show();
-  });
+  const game = useGame();
 
   if (!import.meta.env.DEV)
     window.addEventListener('beforeunload', (e) => {
@@ -42,24 +30,6 @@
       e.returnValue = '';
       return '';
     });
-
-  async function startGame() {
-    await startMenu.value?.hide();
-    gameState.state = GameState.GAME_INTRO;
-    await gameIntro.value?.show();
-  }
-
-  async function showAbout() {
-    await startMenu.value?.hide();
-    gameState.state = GameState.ABOUT;
-    await aboutGame.value?.show();
-  }
-
-  async function hideAbout() {
-    await aboutGame.value?.hide();
-    gameState.state = GameState.START_MENU;
-    await startMenu.value?.show();
-  }
 </script>
 
 <style scoped>

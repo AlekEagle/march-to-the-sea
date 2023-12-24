@@ -48,9 +48,12 @@
 <script lang="ts" setup>
   import EnterExitSlide from '@/components/Animation/EnterExitSlide.vue';
   import professionalBanner from '@/assets/images/lol.jpg';
-  import { ref } from 'vue';
+  import { ref, onMounted } from 'vue';
+  import useGame from '@/stores/GameStateMachine';
+  import GameState from '@/data/GameState';
 
-  let proBanner = ref<typeof EnterExitSlide>(),
+  let game = useGame(),
+    proBanner = ref<typeof EnterExitSlide>(),
     iwcProd = ref<typeof EnterExitSlide>(),
     awardWinning = ref<typeof EnterExitSlide>(),
     comingSoon = ref<typeof EnterExitSlide>(),
@@ -67,21 +70,21 @@
     shouldStop.value = false;
     // Listen for clicks on the page
     await proBanner.value?.begin();
-    // If the animation was stopped early, immediately return.
-    if (shouldStop.value) return;
-    await iwcProd.value?.begin();
-    // If the animation was stopped early, immediately return.
-    if (shouldStop.value) return;
-    await awardWinning.value?.begin();
-    // If the animation was stopped early, immediately return.
-    if (shouldStop.value) return;
-    await comingSoon.value?.begin();
-    // If the animation was stopped early, immediately return.
-    if (shouldStop.value) return;
-    await comingSoon2.value?.begin();
+    // If the animation was stopped early, continue.
+    if (!shouldStop.value) await iwcProd.value?.begin();
+    // If the animation was stopped early, continue.
+    if (!shouldStop.value) await awardWinning.value?.begin();
+    // If the animation was stopped early, continue.
+    if (!shouldStop.value) await comingSoon.value?.begin();
+    // If the animation was stopped early, continue.
+    if (!shouldStop.value) await comingSoon2.value?.begin();
+    // After the animation is finished, set the game state to the start menu.
+    game.state = GameState.START_MENU;
   }
 
-  defineExpose({ begin });
+  onMounted(async () => {
+    await begin();
+  });
 </script>
 
 <style scoped>

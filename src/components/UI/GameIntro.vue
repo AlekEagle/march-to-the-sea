@@ -40,8 +40,11 @@
 <script lang="ts" setup>
   import EnterExitSlide from '@/components/Animation/EnterExitSlide.vue';
   import { ref } from 'vue';
+  import useGame from '@/stores/GameStateMachine';
+  import GameState from '@/data/GameState';
 
-  const welcomeCard = ref<typeof EnterExitSlide>(),
+  const game = useGame(),
+    welcomeCard = ref<typeof EnterExitSlide>(),
     instructionsCardP1 = ref<typeof EnterExitSlide>(),
     instructionsCardP2 = ref<typeof EnterExitSlide>(),
     transitionToGameCard = ref<typeof EnterExitSlide>();
@@ -52,9 +55,10 @@
     await instructionsCardP1.value?.begin();
     await instructionsCardP2.value?.begin();
     await transitionToGameCard.value?.begin();
+    game.state = GameState.REQUISITION_SUPPLIES;
   }
 
-  defineExpose({ show });
+  game.subscribe(show, GameState.GAME_INTRO);
 </script>
 
 <style scoped>
