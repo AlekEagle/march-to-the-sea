@@ -3,7 +3,9 @@
     <div
       v-bind="$attrs"
       v-if="visible"
-      :class="`${enterDirection} ${exitDirection}`"
+      :class="`${enterDirection} ${exitDirection}${
+        props.fullSize ? ' full-size' : ''
+      }`"
     >
       <slot />
     </div>
@@ -17,6 +19,12 @@
 
   defineOptions({
     inheritAttrs: false,
+  });
+
+  const props = defineProps({
+    fullSize: {
+      type: Boolean,
+    },
   });
 
   const visible = ref(false),
@@ -46,6 +54,11 @@
 </script>
 
 <style scoped>
+  div.full-size {
+    width: 100vw;
+    height: 100vh;
+  }
+
   .menu-slide-enter-active.enter-top {
     animation: slide-in-top 1s ease-out;
   }

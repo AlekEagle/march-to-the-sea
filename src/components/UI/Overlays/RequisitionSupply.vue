@@ -2,6 +2,7 @@
   <MenuSlide
     ref="menuSlide"
     style="z-index: 2; position: absolute; background-color: #0c0c0c"
+    full-size
   >
     <div>
       <h1>Purchase Supply</h1>

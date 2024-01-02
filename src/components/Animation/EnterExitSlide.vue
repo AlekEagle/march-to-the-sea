@@ -1,6 +1,9 @@
 <template>
   <Transition type="animation" name="enter-exit-slide">
-    <div v-if="visible" :class="`${direction}`">
+    <div
+      v-if="visible"
+      :class="`${direction}${props.fullSize ? ' full-size' : ''}`"
+    >
       <slot />
     </div>
   </Transition>
@@ -22,6 +25,9 @@
     },
     cancellable: {
       type: Boolean, // If true, the slide can be stopped early by the user clicking.
+    },
+    fullSize: {
+      type: Boolean,
     },
   });
 
@@ -103,6 +109,11 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+  }
+
+  div.full-size {
+    width: 100vw;
+    height: 100vh;
   }
 
   .enter-exit-slide-enter-active.top-to-bottom:not(.stop-now) {

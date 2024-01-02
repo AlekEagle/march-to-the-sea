@@ -4,6 +4,8 @@
   <AboutGame />
   <GameIntro />
   <RequisitionSupplies />
+  <DestinationIntro />
+  <DestinationActions />
   <Transition name="speech-box">
     <div v-if="game.speechBox" class="speech-box">
       <h3 v-text="game.speechBoxTitle" />
@@ -21,6 +23,8 @@
   import RequisitionSupplies from './components/UI/RequisitionSupplies.vue';
   // Stores
   import useGame from '@/stores/GameStateMachine';
+  import DestinationIntro from './components/UI/DestinationIntro.vue';
+  import DestinationActions from './components/UI/DestinationActions.vue';
 
   const game = useGame();
 
