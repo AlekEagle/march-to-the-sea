@@ -89,6 +89,8 @@ export default class MilitaryForce {
 
   public set morale(morale: number) {
     this._morale = morale;
+    if (this._morale > 100) this._morale = 100;
+    else if (this._morale < 0) this._morale = 0;
   }
 
   public get nutrition(): number {
@@ -100,13 +102,17 @@ export default class MilitaryForce {
   }
 
   public get strength(): number {
-    return this._baseStrength * (this._morale + 25 + this._nutrition / 100);
+    return (
+      this._baseStrength *
+      ((this._morale + 50) / 100) *
+      ((this._nutrition + 50) / 100)
+    );
   }
 
   // No setters for strength, accuracy, or retreatThreshold, as they are computed values.
 
   public get accuracy(): number {
-    return this._baseAccuracy * ((this._morale + 25) / 100);
+    return Math.min(this._baseAccuracy * ((this._morale + 25) / 100), 100);
   }
 
   public get retreatThreshold(): number {
@@ -118,22 +124,21 @@ export default class MilitaryForce {
 
   public get susceptibilityMultiplier(): number {
     return calibrateLinear(this._nutrition, [
-      { input: 50, output: 2 },
-      { input: 100, output: 1 },
-      { input: 150, output: 0.5 },
+      { input: 0, output: 2 },
+      { input: 100, output: 0.5 },
     ]);
   }
 
   public onDayAdvance() {
     this._nutrition -= 2;
-    if (this._nutrition < 50) this._nutrition = 50;
+    if (this._nutrition < 0) this._nutrition = 0;
   }
 
   public ration(count: number) {
     const addend = count * 10;
     const commit = () => {
       this._nutrition += addend;
-      if (this._nutrition > 150) this._nutrition = 150;
+      if (this._nutrition > 0) this._nutrition = 100;
     };
     return {
       cost:

@@ -37,6 +37,7 @@
   }
 
   async function show() {
+    if (visible.value) return;
     rechoose();
     visible.value = true;
     // Wait for the animation to finish
@@ -44,6 +45,7 @@
   }
 
   async function hide() {
+    if (!visible.value) return;
     rechoose();
     visible.value = false;
     // Wait for the animation to finish
@@ -60,34 +62,34 @@
   }
 
   .menu-slide-enter-active.enter-top {
-    animation: slide-in-top 1s ease-out;
+    animation: slide-in-top 1s ease-in-out;
   }
 
   .menu-slide-leave-active.exit-top {
-    animation: slide-in-top 1s ease-out reverse;
+    animation: slide-in-top 1s ease-in-out reverse;
   }
 
   .menu-slide-enter-active.enter-bottom {
-    animation: slide-in-bottom 1s ease-out;
+    animation: slide-in-bottom 1s ease-in-out;
   }
 
   .menu-slide-leave-active.exit-bottom {
-    animation: slide-in-bottom 1s ease-out reverse;
+    animation: slide-in-bottom 1s ease-in-out reverse;
   }
 
   .menu-slide-enter-active.enter-left {
-    animation: slide-in-left 1s ease-out;
+    animation: slide-in-left 1s ease-in-out;
   }
 
   .menu-slide-leave-active.exit-left {
-    animation: slide-in-left 1s ease-out reverse;
+    animation: slide-in-left 1s ease-in-out reverse;
   }
 
   .menu-slide-enter-active.enter-right {
-    animation: slide-in-right 1s ease-out;
+    animation: slide-in-right 1s ease-in-out;
   }
 
   .menu-slide-leave-active.exit-right {
-    animation: slide-in-right 1s ease-out reverse;
+    animation: slide-in-right 1s ease-in-out reverse;
   }
 </style>

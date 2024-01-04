@@ -50,6 +50,10 @@
     transitionToGameCard = ref<typeof EnterExitSlide>();
 
   async function show(): Promise<void> {
+    if (window.location.search.includes('skip-instructions')) {
+      game.state = GameState.REQUISITION_SUPPLIES;
+      return;
+    }
     await welcomeCard.value?.begin();
     // Because welcomeCard has no duration, this promise will not resolve until the user clicks.
     await instructionsCardP1.value?.begin();

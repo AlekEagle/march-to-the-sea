@@ -81,6 +81,49 @@ button:focus,
 button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Make labels for inputs not ugly */
+label {
+  display: block;
+  font-size: 1.75em;
+  font-weight: 500;
+  margin-bottom: 0.4em;
+}
+
+/* Style dropdown boxes similar to buttons */
+select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.6em 2.4em 0.6em 1.2em;
+  font-size: 2em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #1a1a1a;
+  cursor: pointer;
+  transition: border-color 0.25s;
+  background-image: url("data:image/svg+xml;utf8,<svg fill='white' height='48' viewBox='0 0 48 48' width='48' xmlns='http://www.w3.org/2000/svg'><path d='M14 20l10 10 10-10z'/><path d='M0 0h48v48H0z' fill='none'/></svg>");
+  background-repeat: no-repeat;
+  background-position-x: calc(100% - 1.2em);
+  background-position-y: 50%;
+}
+select:hover {
+  border-color: #646cff;
+}
+select:focus,
+select:focus-visible {
+  outline: 4px auto -webkit-focus-ring-color;
+}
+select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 
 .card {
   padding: 2em;

@@ -1,0 +1,12 @@
+enum DestinationActions {
+  KILL_ALL_CIVILIANS,
+  KILL_TOWN_LEADERS,
+  SEARCH_FOR_SUPPLIES,
+  DESTROY_RAILROAD,
+  DESTROY_SUPPLY_DEPOT,
+  DESTROY_AGRICULTURE,
+  DESTROY_INDUSTRY,
+  DESTROY_FORT, // Maybe?
+}
+
+export default DestinationActions;

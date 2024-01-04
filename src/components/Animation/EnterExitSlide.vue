@@ -117,35 +117,35 @@
   }
 
   .enter-exit-slide-enter-active.top-to-bottom:not(.stop-now) {
-    animation: slide-in-top 1s ease-out;
+    animation: slide-in-top 1s ease-in-out;
   }
 
   .enter-exit-slide-leave-active.top-to-bottom:not(.stop-now) {
-    animation: slide-in-bottom 1s ease-out reverse;
+    animation: slide-in-bottom 1s ease-in-out reverse;
   }
 
   .enter-exit-slide-enter-active.bottom-to-top:not(.stop-now) {
-    animation: slide-in-bottom 1s ease-out;
+    animation: slide-in-bottom 1s ease-in-out;
   }
 
   .enter-exit-slide-leave-active.bottom-to-top:not(.stop-now) {
-    animation: slide-in-top 1s ease-out reverse;
+    animation: slide-in-top 1s ease-in-out reverse;
   }
 
   .enter-exit-slide-enter-active.left-to-right:not(.stop-now) {
-    animation: slide-in-left 1s ease-out;
+    animation: slide-in-left 1s ease-in-out;
   }
 
   .enter-exit-slide-leave-active.left-to-right:not(.stop-now) {
-    animation: slide-in-right 1s ease-out reverse;
+    animation: slide-in-right 1s ease-in-out reverse;
   }
 
   .enter-exit-slide-enter-active.right-to-left:not(.stop-now) {
-    animation: slide-in-right 1s ease-out;
+    animation: slide-in-right 1s ease-in-out;
   }
 
   .enter-exit-slide-leave-active.right-to-left:not(.stop-now) {
-    animation: slide-in-left 1s ease-out reverse;
+    animation: slide-in-left 1s ease-in-out reverse;
   }
 
   div.stop-now {

@@ -17,11 +17,7 @@
 
       <div class="amt-select">
         <span
-          @click="
-            () => {
-              if (--setsToPurchase < 1) setsToPurchase = 1;
-            }
-          "
+          @click="decreaseSets"
           :class="`${setsToPurchase <= 1 ? 'disabled amt-btn' : 'amt-btn'}`"
           >-</span
         >
@@ -34,13 +30,9 @@
           "
         />
         <span
-          @click="
-            () => {
-              if (++setsToPurchase > 999) setsToPurchase = 999;
-            }
-          "
+          @click="increaseSets"
           :class="`${
-            setsToPurchase >= 999 || totalCost > game.money
+            setsToPurchase >= 999 || totalCostPlusOne > game.money
               ? 'disabled amt-btn'
               : 'amt-btn'
           }`"
@@ -93,11 +85,22 @@
     totalCost = computed(() => {
       return setsToPurchase.value * SUPPLY_COSTS[supplyToPurchase.value].value;
     }),
+    totalCostPlusOne = computed(() => {
+      return (
+        (setsToPurchase.value + 1) * SUPPLY_COSTS[supplyToPurchase.value].value
+      );
+    }),
     totalAmount = computed(() => {
       return setsToPurchase.value * SUPPLY_COSTS[supplyToPurchase.value].amount;
     });
 
-  game.state;
+  function increaseSets() {
+    if (totalCostPlusOne.value <= game.money) setsToPurchase.value++;
+  }
+
+  function decreaseSets() {
+    if (setsToPurchase.value > 1) setsToPurchase.value--;
+  }
 
   function show(supply: SupplyType) {
     menuSlide.value?.show();

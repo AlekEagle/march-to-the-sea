@@ -24,6 +24,8 @@
     game.state = GameState.DESTINATION;
   }
 
+  // TODO: Implement encounter when entering a town
+
   game.subscribe(show, GameState.DESTINATION_INTRO);
 </script>
 

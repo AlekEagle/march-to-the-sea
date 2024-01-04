@@ -9,14 +9,16 @@ enum GameState {
   REQUISITION_SUPPLIES,
   // == Marching ==
   MARCHING,
-  MARCHING_REST,
-  MARCHING_ENCOUNTER,
-  // === Destinations ===
+  // == Destinations ==
   DESTINATION_INTRO,
   DESTINATION,
-  DESTINATION_ENCOUNTER,
-  DESTINATION_SCAVENGE,
-  DESTINATION_DESTROY,
+  // == Encounters ==
+  ENCOUNTER_INTRO,
+  ENCOUNTER,
+  // == Misc. ==
+  MILITARY_INFO,
+  OPTIONS,
+  USE_MEDKITS,
 }
 
 export default GameState;

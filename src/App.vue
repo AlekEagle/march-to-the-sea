@@ -6,12 +6,17 @@
   <RequisitionSupplies />
   <DestinationIntro />
   <DestinationActions />
-  <Transition name="speech-box">
-    <div v-if="game.speechBox" class="speech-box">
-      <h3 v-text="game.speechBoxTitle" />
-      <p v-text="game.speechBoxTextToDisplay" />
-    </div>
-  </Transition>
+  <MilitaryInfo />
+  <MilitaryOptions />
+  <UseMedkitAction />
+  <MilitaryActionButtons />
+  <div class="toast-container">
+    <Transition name="toast">
+      <div v-if="game.toast" class="toast">
+        {{ game.toastMessage }}
+      </div>
+    </Transition>
+  </div>
 </template>
 
 <script lang="ts" setup>
@@ -20,11 +25,15 @@
   import StartMenu from '@/components/UI/StartMenu.vue';
   import AboutGame from '@/components/UI/AboutGame.vue';
   import GameIntro from '@/components/UI/GameIntro.vue';
-  import RequisitionSupplies from './components/UI/RequisitionSupplies.vue';
+  import RequisitionSupplies from '@/components/UI/RequisitionSupplies.vue';
+  import DestinationIntro from '@/components/UI/DestinationIntro.vue';
+  import DestinationActions from '@/components/UI/DestinationActions.vue';
+  import MilitaryInfo from '@/components/UI/Overlays/MilitaryInfo.vue';
+  import MilitaryActionButtons from '@/components/UI/Overlays/MilitaryActionButtons.vue';
+  import MilitaryOptions from '@/components/UI/Overlays/MilitaryOptions.vue';
   // Stores
   import useGame from '@/stores/GameStateMachine';
-  import DestinationIntro from './components/UI/DestinationIntro.vue';
-  import DestinationActions from './components/UI/DestinationActions.vue';
+  import UseMedkitAction from './components/UI/Overlays/UseMedkitAction.vue';
 
   const game = useGame();
 
@@ -37,43 +46,45 @@
 </script>
 
 <style scoped>
-  div.speech-box {
-    display: grid;
-    grid-template-rows: 1fr 3fr;
-    background-color: #171717;
-    border: 1px solid white;
-    padding: 1rem;
-    margin: 1rem;
-    border-radius: 0.5rem;
-    bottom: 0;
-    transition: bottom;
-    width: 95vw;
-    max-width: 500px;
+  .toast-container {
     position: fixed;
-    left: 50%;
-    transform: translateX(-50%);
-    height: 100px;
-    transition: bottom 0.5s ease-in-out;
-    text-align: left;
-  }
-
-  div.speech-box h3 {
-    margin: 0;
-    grid-row: 1;
-  }
-
-  div.speech-box p {
-    margin: 0;
-    grid-row: 2;
-  }
-
-  .speech-box-enter-to,
-  .speech-box-leave-from {
     bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    z-index: 100;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    pointer-events: none;
   }
 
-  .speech-box-enter-from,
-  .speech-box-leave-to {
-    bottom: -155px;
+  .toast {
+    position: relative;
+    bottom: 15px;
+    padding: 1rem;
+    background-color: rgba(0, 0, 0, 0.5);
+    color: white;
+    text-align: center;
+    font-size: 1.5rem;
+    font-weight: bold;
+    z-index: 100;
+    border-radius: 5px;
+    border: 1px solid white;
+  }
+
+  .toast-enter-active,
+  .toast-leave-active {
+    transition: all 0.5s;
+  }
+
+  .toast-enter-from,
+  .toast-leave-to {
+    opacity: 0;
+  }
+
+  .toast-enter-to,
+  .toast-leave-from {
+    opacity: 1;
   }
 </style>
