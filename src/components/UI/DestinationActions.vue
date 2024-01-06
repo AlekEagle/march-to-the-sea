@@ -73,13 +73,17 @@
 </template>
 
 <script lang="ts" setup>
+  // Vue Components
   import MenuSlide from '@/components/Animation/MenuSlide.vue';
-  import { ref, computed } from 'vue';
+  import ActionConfirm from '@/components/UI/Overlays/ActionConfirm.vue';
+  // Stores
   import useGame from '@/stores/GameStateMachine';
+  // Data
   import GameState from '@/data/GameState';
   import TownFeatures from '@/data/TownFeatures';
   import DestinationActions from '@/data/DestinationActions';
-  import ActionConfirm from '@/components/UI/Overlays/ActionConfirm.vue';
+  // Other
+  import { ref, computed } from 'vue';
 
   const menuSlide = ref<typeof MenuSlide>(),
     actionConfirm = ref<typeof ActionConfirm>(),
@@ -154,5 +158,11 @@
     align-items: center;
     justify-content: center;
     gap: 10px;
+    width: fit-content;
+    margin: 0 auto;
+  }
+
+  div.action-buttons button {
+    width: 100%;
   }
 </style>

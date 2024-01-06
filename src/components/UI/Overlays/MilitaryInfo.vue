@@ -104,15 +104,23 @@
       <h2>How</h2>
       <h3>I am broken.</h3>
     </template>
-
+    <button @click="game.state = GameState.DAILY_HISTORY">
+      View Daily History
+    </button>
+    <br />
+    <br />
     <button @click="hide">Close</button>
   </MenuSlide>
 </template>
 
 <script lang="ts" setup>
+  // Vue Components
   import MenuSlide from '@/components/Animation/MenuSlide.vue';
+  // Stores
   import useGame from '@/stores/GameStateMachine';
+  // Data
   import GameState from '@/data/GameState';
+  // Other
   import { ref, computed } from 'vue';
 
   const menuSlide = ref<typeof MenuSlide>(),
@@ -131,7 +139,7 @@
 
   game.subscribe((state, oldState) => {
     if (state === GameState.MILITARY_INFO) {
-      stateToRestore.value = oldState;
+      if (oldState !== GameState.DAILY_HISTORY) stateToRestore.value = oldState;
       menuSlide.value?.show();
     } else menuSlide.value?.hide();
   });

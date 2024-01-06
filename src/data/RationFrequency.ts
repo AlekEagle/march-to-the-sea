@@ -3,7 +3,7 @@ const RATION_FREQUENCIES = {
     label: 'None',
     description: 'Do not feed soldiers.',
     rationRequirement: () => false,
-    amount: 0,
+    amount: 1, // Keep it set to one so if the user manually rations for a day, they'll actually get fed.
   },
   scarce: {
     label: 'Scarce',

@@ -19,6 +19,7 @@ enum GameState {
   MILITARY_INFO,
   OPTIONS,
   USE_MEDKITS,
+  DAILY_HISTORY,
 }
 
 export default GameState;

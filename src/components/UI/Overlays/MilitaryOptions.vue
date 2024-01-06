@@ -93,12 +93,16 @@
 </template>
 
 <script lang="ts" setup>
+  // Vue Components
   import MenuSlide from '@/components/Animation/MenuSlide.vue';
+  // Stores
   import useGame from '@/stores/GameStateMachine';
+  // Data
   import GameState from '@/data/GameState';
-  import { ref } from 'vue';
   import MARCHING_SPEEDS from '@/data/MarchingSpeeds';
   import RATION_FREQUENCIES from '@/data/RationFrequency';
+  // Other
+  import { ref } from 'vue';
 
   const menuSlide = ref<typeof MenuSlide>(),
     game = useGame(),

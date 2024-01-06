@@ -1,4 +1,5 @@
-import { calibrateLinear } from '@/utils/Range';
+import { calibrateLinear, calibratePolynomial } from '@/utils/Range';
+import { chanceMultiple } from '@/utils/Random';
 
 interface Units {
   alive: number;
@@ -150,5 +151,47 @@ export default class MilitaryForce {
       result: this._nutrition + addend,
       commit,
     };
+  }
+
+  public doStarve() {
+    // Calculate rate of starvation.
+    const starvationRate = Math.floor(
+      calibratePolynomial(this.nutrition, 3, [
+        {
+          input: 50,
+          output: 0,
+        },
+        {
+          input: 0,
+          output: 100,
+        },
+      ]),
+    );
+    // Calculate number of units that starve.
+    let starvedUnits = {
+      alive: chanceMultiple(this._units.alive, starvationRate),
+      exhausted: chanceMultiple(
+        this._units.injured?.exhaustion ?? 0,
+        starvationRate,
+      ),
+      wounded: chanceMultiple(
+        this._units.injured?.wounded ?? 0,
+        starvationRate,
+      ),
+      infected: chanceMultiple(
+        this._units.injured?.infected ?? 0,
+        starvationRate,
+      ),
+    };
+    // Apply starvation to all units.
+    this._units.alive -= starvedUnits.alive;
+    if (this._units.injured) {
+      this._units.injured.exhaustion -= starvedUnits.exhausted;
+      this._units.injured.wounded -= starvedUnits.wounded;
+      this._units.injured.infected -= starvedUnits.infected;
+    }
+
+    // Return the number of units that starved.
+    return starvedUnits;
   }
 }

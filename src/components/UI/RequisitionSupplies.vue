@@ -42,11 +42,15 @@
 </template>
 
 <script lang="ts" setup>
-  import MenuSlide from '../Animation/MenuSlide.vue';
-  import useGame from '../../stores/GameStateMachine';
-  import GameState from '../../data/GameState';
+  // Vue Components
+  import MenuSlide from '@/components/Animation/MenuSlide.vue';
+  import RequisitionSupply from '@/components/UI/Overlays/RequisitionSupply.vue';
+  // Stores
+  import useGame from '@/stores/GameStateMachine';
+  // Data
+  import GameState from '@/data/GameState';
+  // Other
   import { ref } from 'vue';
-  import RequisitionSupply from './Overlays/RequisitionSupply.vue';
 
   const game = useGame(),
     menuSlide = ref<typeof MenuSlide>(),

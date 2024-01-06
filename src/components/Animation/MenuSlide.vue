@@ -13,6 +13,7 @@
 </template>
 
 <script lang="ts" setup>
+  // Other
   import { ref } from 'vue';
   import { choose } from '@/utils/Random';
   import '@/styles/sliding-keyframes.css';
@@ -58,7 +59,9 @@
 <style scoped>
   div.full-size {
     width: 100vw;
-    height: 100vh;
+    height: 98vh;
+    overflow: hidden auto;
+    padding: 0 0 1rem 0;
   }
 
   .menu-slide-enter-active.enter-top {

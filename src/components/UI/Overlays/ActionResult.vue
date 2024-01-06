@@ -1,7 +1,7 @@
 <template>
   <MenuSlide
     ref="menuSlide"
-    style="z-index: 2; position: absolute; background-color: #0c0c0c"
+    style="z-index: 10; position: absolute; background-color: #0c0c0c"
     full-size
   >
     <div>
@@ -16,10 +16,14 @@
 </template>
 
 <script lang="ts" setup>
+  // Vue Components
   import MenuSlide from '@/components/Animation/MenuSlide.vue';
-  import { ref, computed } from 'vue';
+  // Stores
   import useGame from '@/stores/GameStateMachine';
+  // Data
   import DestinationActions from '@/data/DestinationActions';
+  // Other
+  import { ref, computed } from 'vue';
 
   const menuSlide = ref<typeof MenuSlide>(),
     game = useGame(),

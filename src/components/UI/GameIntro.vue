@@ -38,10 +38,14 @@
 </template>
 
 <script lang="ts" setup>
+  // Vue Components
   import EnterExitSlide from '@/components/Animation/EnterExitSlide.vue';
-  import { ref } from 'vue';
+  // Stores
   import useGame from '@/stores/GameStateMachine';
+  // Data
   import GameState from '@/data/GameState';
+  // Other
+  import { ref } from 'vue';
 
   const game = useGame(),
     welcomeCard = ref<typeof EnterExitSlide>(),

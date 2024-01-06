@@ -46,11 +46,15 @@
 </template>
 
 <script lang="ts" setup>
+  // Vue Components
   import EnterExitSlide from '@/components/Animation/EnterExitSlide.vue';
+  // Stores
+  import useGame from '@/stores/GameStateMachine';
+  // Data
+  import GameState from '@/data/GameState';
+  // Other
   import professionalBanner from '@/assets/images/lol.jpg';
   import { ref, onMounted } from 'vue';
-  import useGame from '@/stores/GameStateMachine';
-  import GameState from '@/data/GameState';
 
   let game = useGame(),
     proBanner = ref<typeof EnterExitSlide>(),

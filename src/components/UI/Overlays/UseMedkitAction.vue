@@ -9,16 +9,10 @@
       >You are going to use your medkits to heal
       {{ injuryToHeal }} soldiers.</h2
     >
-    <button
-      v-if="injuryToHeal === 'wounded'"
-      @click="injuryToHeal = 'infected'"
-    >
+    <button v-if="injuryToHeal === 'wounded'" @click="switchInjury('infected')">
       Heal Infected Instead
     </button>
-    <button
-      v-if="injuryToHeal === 'infected'"
-      @click="injuryToHeal = 'wounded'"
-    >
+    <button v-if="injuryToHeal === 'infected'" @click="switchInjury('wounded')">
       Heal Wounded Instead
     </button>
 
@@ -55,10 +49,14 @@
 </template>
 
 <script lang="ts" setup>
+  // Vue Components
   import MenuSlide from '@/components/Animation/MenuSlide.vue';
-  import { ref, computed } from 'vue';
+  // Stores
   import useGame from '@/stores/GameStateMachine';
+  // Data
   import GameState from '@/data/GameState';
+  // Other
+  import { ref, computed } from 'vue';
 
   const menuSlide = ref<typeof MenuSlide>(),
     game = useGame(),
@@ -98,7 +96,13 @@
   function close() {
     menuSlide.value?.hide();
     medkitsToUse.value = 1;
+    injuryToHeal.value = 'wounded';
     game.state = stateToRestore.value!;
+  }
+
+  function switchInjury(injury: 'wounded' | 'infected') {
+    medkitsToUse.value = 1;
+    injuryToHeal.value = injury;
   }
 
   game.subscribe((state, oldState) => {

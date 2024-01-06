@@ -28,7 +28,21 @@ export const daysInMonth: Record<Months, number> = {
   [Months.December]: 31,
 };
 
+export type DateTuple = [Months, number];
+
+export type GameDateState = {
+  month: Months;
+  day: number;
+  elapsed: number;
+};
+
 export default class GameDate {
+  public static fromState(state: GameDateState): GameDate {
+    const date = new GameDate(state.month, state.day);
+    date._elapsed = state.elapsed;
+    return date;
+  }
+
   private _month: Months;
   private _day: number;
   private _elapsed: number = 0;
@@ -48,6 +62,42 @@ export default class GameDate {
 
   public get elapsed(): number {
     return this._elapsed;
+  }
+
+  public get initialDate(): DateTuple {
+    // Use elapsed days to calculate the initial day from the current date (this._month and this._day)
+    let elapsed = this._elapsed;
+    let month = this._month;
+    let day = this._day;
+    while (elapsed > 0) {
+      if (elapsed >= daysInMonth[month]) {
+        elapsed -= daysInMonth[month];
+        month++;
+        if (month > Months.December) {
+          month = Months.January;
+        }
+      } else {
+        day += elapsed;
+        elapsed = 0;
+      }
+    }
+    return [month, day];
+  }
+
+  public get initialMonth(): Months {
+    return this.initialDate[0];
+  }
+
+  public get initialDay(): number {
+    return this.initialDate[1];
+  }
+
+  public get state(): GameDateState {
+    return {
+      month: this._month,
+      day: this._day,
+      elapsed: this._elapsed,
+    };
   }
 
   public get daysInMonth(): number {

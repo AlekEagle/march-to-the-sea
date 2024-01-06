@@ -10,6 +10,7 @@
 </template>
 
 <script lang="ts" setup>
+  // Other
   import { ref } from 'vue';
   import { wait, waitFor, watchOrWait } from '@/utils/Wait';
   import '@/styles/sliding-keyframes.css';

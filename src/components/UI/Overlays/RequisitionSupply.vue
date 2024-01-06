@@ -73,9 +73,13 @@
 </template>
 
 <script lang="ts" setup>
+  // Vue Components
   import MenuSlide from '@/components/Animation/MenuSlide.vue';
+  // Stores
   import useGame from '@/stores/GameStateMachine';
+  // Data
   import SUPPLY_COSTS, { SupplyType } from '@/data/SupplyCosts';
+  // Other
   import { ref, computed } from 'vue';
 
   const game = useGame(),

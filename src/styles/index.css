@@ -85,6 +85,9 @@ button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
+button:disabled:hover {
+  border-color: #ff6c64;
+}
 
 /* Make labels for inputs not ugly */
 label {
