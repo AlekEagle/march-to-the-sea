@@ -186,6 +186,9 @@ export default class MilitaryForce {
       this._units.injured.infected -= starvedUnits.infected;
     }
 
+    // Add the total of all starved units to the dead units.
+    this._units.dead += starvedUnits.alive + starvedUnits.exhausted + starvedUnits.wounded + starvedUnits.infected;
+
     // Return the number of units that starved.
     return starvedUnits;
   }
