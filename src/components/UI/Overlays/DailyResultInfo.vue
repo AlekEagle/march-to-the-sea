@@ -6,7 +6,7 @@
   >
     <h1>Daily History</h1>
     <div class="header-action-buttons">
-      <button :disabled="dayObserving === 0" @click="dayObserving--"
+      <button :disabled="dayObserving <= 0" @click="dayObserving--"
         >Prev Day</button
       >
       <button @click="hide">Close</button>
@@ -21,15 +21,72 @@
       <div class="history">
         <div class="history-item" v-if="currentDayObserving[1].day">
           <h3>End of day</h3>
-          <p>
-            The soldiers ate
-            {{ currentDayObserving[1].day.fedSoldiers }} ration{{
-              currentDayObserving[1].day.fedSoldiers === 1 ? '' : 's'
-            }}.
-            <br />
-            {{ currentDayObserving[1].day.deadInfectedSoldiers }} died due to an
-            infection.
+          <!-- Rations for units -->
+          <p
+            v-text="
+              `Each soldier ate ${
+                currentDayObserving[1].day.fedSoldiers
+              } ration${
+                currentDayObserving[1].day.fedSoldiers === 1 ? '' : 's'
+              }.`
+            "
+          />
+          <!-- Starved units -->
+          <span
+            v-if="
+              currentDayObserving[1].day.starvedUnits.alive +
+                currentDayObserving[1].day.starvedUnits.exhausted +
+                currentDayObserving[1].day.starvedUnits.infected +
+                currentDayObserving[1].day.starvedUnits.wounded !==
+              0
+            "
+          >
+            Some of your soldiers died of starvation:
+            <ul class="starved">
+              <li
+                v-for="[key, value] in Object.entries(
+                  currentDayObserving[1].day.starvedUnits,
+                ).filter(([, value]) => value > 0)"
+              >
+                {{ key.charAt(0).toLocaleUpperCase() + key.slice(1) }}:
+                {{ value }}
+              </li>
+            </ul>
+          </span>
+          <!-- Recovered exhausted units -->
+          <p v-if="currentDayObserving[1].day.recoveredExhaustedSoldiers > 0">
+            {{
+              currentDayObserving[1].day.recoveredExhaustedSoldiers.toLocaleString()
+            }}
+            of your exhausted soldiers recovered.
           </p>
+          <!-- Infected wounded units -->
+          <p v-if="currentDayObserving[1].day.infectedWoundedSoldiers > 0">
+            {{
+              currentDayObserving[1].day.infectedWoundedSoldiers.toLocaleString()
+            }}
+            of your wounded soldiers developed an infection.
+          </p>
+          <!-- Recovered wounded units -->
+          <p v-if="currentDayObserving[1].day.recoveredWoundedSoldiers > 0">
+            {{
+              currentDayObserving[1].day.recoveredWoundedSoldiers.toLocaleString()
+            }}
+            of your infected soldiers recovered.
+          </p>
+          <!-- Dead infected units -->
+          <p v-if="currentDayObserving[1].day.deadInfectedSoldiers > 0">
+            {{
+              currentDayObserving[1].day.deadInfectedSoldiers.toLocaleString()
+            }}
+            of your infected soldiers died.
+          </p>
+        </div>
+        <div
+          class="history-item"
+          v-if="currentDayObserving[1].destinationAction"
+        >
+          <h3>Actions</h3>
         </div>
       </div>
     </template>
@@ -50,7 +107,7 @@
 
   const menuSlide = ref<typeof MenuSlide>(),
     game = useGame(),
-    dayObserving = ref<number>(game.days.elapsed),
+    dayObserving = ref<number>(game.days.elapsed - 1),
     stateToRestore = ref<GameState>();
 
   const currentDayObserving = computed<DailyResultsRecord | null>(() => {
@@ -63,7 +120,7 @@
 
   function show() {
     menuSlide.value?.show();
-    dayObserving.value = game.days.elapsed;
+    dayObserving.value = game.days.elapsed - 1;
   }
 
   function hide() {
@@ -84,5 +141,11 @@
 <style scoped>
   div.header-action-buttons button {
     margin: 0 0.5rem;
+  }
+
+  ul.starved {
+    margin: 0;
+    padding: 0;
+    list-style: none;
   }
 </style>

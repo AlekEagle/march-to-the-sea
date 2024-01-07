@@ -59,7 +59,7 @@
 <style scoped>
   div.full-size {
     width: 100vw;
-    height: 98vh;
+    height: calc(100vh - 1rem);
     overflow: hidden auto;
     padding: 0 0 1rem 0;
   }

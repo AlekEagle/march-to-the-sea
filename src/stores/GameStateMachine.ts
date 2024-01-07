@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { ref, computed, watch } from 'vue';
+import { ref, computed } from 'vue';
 
 // === Constants ===
 import GameState from '@/data/GameState';
@@ -14,25 +14,30 @@ import Constants from '@/data/Constants';
 import { chanceMultiple, randomInt } from '@/utils/Random';
 import { calibrateExponential, calibrateLinear } from '@/utils/Range';
 import TownFeatures from '@/data/TownFeatures';
+import SubscriptionService, {
+  StateSubscriptionId,
+  StateSubscriptionCallback,
+} from '@/utils/SubscriptionService';
 import { useToast, TYPE as ToastType, POSITION } from 'vue-toastification';
 import { ToastID } from 'vue-toastification/dist/types/types';
 
 // === Types ===
+
 // K/V pair of destination name and another K/V pair of destination actions and any data that may be associated with them.
-type DestinationActionsPerformedDestination = {
+export type DestinationActionsPerformedDestination = {
   [key in DestinationActions]?: any;
 };
 
-type DestinationActionsPointer = {
+export type DestinationActionsPointer = {
   location: (typeof DESTINATIONS)[number]['name'];
   action: DestinationActions;
 };
 
-type DestinationActionsPerformed = {
+export type DestinationActionsPerformed = {
   [key in (typeof DESTINATIONS)[number]['name']]?: DestinationActionsPerformedDestination;
 };
 
-type DayResults = {
+export type DayResults = {
   fedSoldiers: number;
   deadInfectedSoldiers: number;
   recoveredWoundedSoldiers: number;
@@ -46,10 +51,15 @@ type DayResults = {
   };
 };
 
-type MarchResults = {
+export type MarchResults = {
   distanceTraveled: number;
   exhaustedSoldiers: number;
   deadExhaustedSoldiers: number;
+};
+
+export type MedkitResults = {
+  healedWounded: number;
+  healedInfected: number;
 };
 
 // TODO: EncounterResults type
@@ -58,6 +68,7 @@ export type DailyResults = {
   day: DayResults | null;
   march: MarchResults | null;
   destinationAction: DestinationActionsPointer | null;
+  medkit: MedkitResults | null;
   encounter: any | null; // TODO: EncounterResults type
 };
 
@@ -69,8 +80,6 @@ const useGame = defineStore('game-state-machine', () => {
   // Game State Variables & Methods
   // === Refs ===
   const state = ref(GameState.INTRO),
-    stateSubscribers: Array<(state: GameState, oldState: GameState) => void> =
-      [],
     // == Military Forces ==
     // Union data
     union = ref<MilitaryForce>(new MilitaryForce(62_000, 100, 1, 29, 65, true)),
@@ -162,23 +171,37 @@ const useGame = defineStore('game-state-machine', () => {
         destinationsWithKilledCivilians -
         destinationsWithDestroyedSupplyDepots * 14
       );
-    });
+    }),
+    isDebug = computed<boolean>(() => import.meta.env.DEV);
 
   // == Subscriptions ==
-  // Subscribe to changes in the game state
+
+  // Create a subscription service for the game state.
+  const subscriptionService = new SubscriptionService(state);
+
+  // Function to allow components to subscribe to the game state.
   function subscribe(
-    callback: (state: GameState, oldState: GameState) => void,
-    state?: GameState,
-  ) {
-    stateSubscribers.push((newState, oldState) => {
-      if (state === undefined || state === newState)
-        callback(newState, oldState);
-    });
+    callback: StateSubscriptionCallback<GameState>,
+    stateToMatch?: GameState,
+    callbackOnNoMatch?: StateSubscriptionCallback<GameState>,
+  ): StateSubscriptionId {
+    return subscriptionService.subscribe(
+      callback,
+      stateToMatch,
+      callbackOnNoMatch,
+    );
   }
 
-  // Game state watcher
-  watch(state, (newState, oldState) => {
-    stateSubscribers.forEach((subscriber) => subscriber(newState, oldState));
+  // Function to allow components to unsubscribe from the game state.
+  function unsubscribe(subscriptionId: StateSubscriptionId): void {
+    subscriptionService.unsubscribe(subscriptionId);
+  }
+
+  // Debugging function to print changes to the game state to the console.
+  subscribe((newState, oldState) => {
+    console.log(
+      `Game State Changed: ${GameState[oldState]}(${oldState}) -> ${GameState[newState]}(${newState})`,
+    );
   });
 
   // == Destination Actions Manager Methods ==
@@ -193,7 +216,7 @@ const useGame = defineStore('game-state-machine', () => {
     if (destinationActionsPerformed.value[dest.name]![action] === undefined)
       destinationActionsPerformed.value[dest.name]![action] = data;
     // Add the action to the daily results.
-    addDestinationActionResults(
+    addDailyDestinationActionResults(
       {
         location: dest.name,
         action,
@@ -221,7 +244,7 @@ const useGame = defineStore('game-state-machine', () => {
 
   // == Daily Results Manager Methods ==
   // Add the results of a day to the daily results
-  function addDayResults(results: DayResults, day: GameDateState) {
+  function addDailyDayResults(results: DayResults, day: GameDateState) {
     // Check if there are already results for this day
     const existingResults = dailyResults.value.find(
       (dailyResults) => dailyResults[0].elapsed === day.elapsed,
@@ -241,13 +264,19 @@ const useGame = defineStore('game-state-machine', () => {
       // If there aren't, add the day results
       dailyResults.value.push([
         day,
-        { day: results, march: null, destinationAction: null, encounter: null },
+        {
+          day: results,
+          march: null,
+          destinationAction: null,
+          encounter: null,
+          medkit: null,
+        },
       ]);
     }
   }
 
   // Add the results of a march to the daily results
-  function addMarchResults(results: MarchResults, day: GameDateState) {
+  function addDailyMarchResults(results: MarchResults, day: GameDateState) {
     // Check if there are already results for this day
     const existingResults = dailyResults.value.find(
       (dailyResults) => dailyResults[0].elapsed === day.elapsed,
@@ -267,13 +296,52 @@ const useGame = defineStore('game-state-machine', () => {
       // If there aren't, add the march results
       dailyResults.value.push([
         day,
-        { day: null, march: results, destinationAction: null, encounter: null },
+        {
+          day: null,
+          march: results,
+          destinationAction: null,
+          encounter: null,
+          medkit: null,
+        },
+      ]);
+    }
+  }
+
+  // Add the results of a medkit use to the daily results
+  function addDailyMedkitResults(results: MedkitResults, day: GameDateState) {
+    // Check if there are already results for this day
+    const existingResults = dailyResults.value.findIndex(
+      (dailyResults) => dailyResults[0].elapsed === day.elapsed,
+    );
+    // If there are, check they already have a medkit result
+    if (existingResults !== -1) {
+      if (dailyResults.value[existingResults][1].medkit !== null) {
+        // If they do, sum the existing results with the new results
+        dailyResults.value[existingResults][1].medkit!.healedWounded +=
+          results.healedWounded;
+        dailyResults.value[existingResults][1].medkit!.healedInfected +=
+          results.healedInfected;
+      } else {
+        // If they don't, add the medkit results
+        dailyResults.value[existingResults][1].medkit = results;
+      }
+    } else {
+      // If there aren't, add the medkit results
+      dailyResults.value.push([
+        day,
+        {
+          day: null,
+          march: null,
+          destinationAction: null,
+          encounter: null,
+          medkit: results,
+        },
       ]);
     }
   }
 
   // Add the results of a destination action to the daily results
-  function addDestinationActionResults(
+  function addDailyDestinationActionResults(
     results: DestinationActionsPointer,
     day: GameDateState,
   ) {
@@ -296,9 +364,22 @@ const useGame = defineStore('game-state-machine', () => {
       // If there aren't, add the destination action results
       dailyResults.value.push([
         day,
-        { day: null, march: null, destinationAction: results, encounter: null },
+        {
+          day: null,
+          march: null,
+          destinationAction: results,
+          encounter: null,
+          medkit: null,
+        },
       ]);
     }
+  }
+
+  function getDailyResults(day: GameDateState) {
+    const results = dailyResults.value.find(
+      (dailyResults) => dailyResults[0].elapsed === day.elapsed,
+    );
+    return results?.[1];
   }
 
   // TODO: Add encounter results
@@ -312,6 +393,8 @@ const useGame = defineStore('game-state-machine', () => {
 
   // March and calculate the results of the march.
   function march() {
+    // Debounce the march button.
+    if (state.value !== GameState.MARCHING) return;
     // Create a variable to store the results of the march.
     const results = {
       distanceTraveled: 0,
@@ -329,9 +412,10 @@ const useGame = defineStore('game-state-machine', () => {
     union.value.nutrition -= results.distanceTraveled;
 
     // Calculate the number of soldiers who become exhausted.
-    const exhaustionChance =
-      union.value.susceptibilityMultiplier *
-      MARCHING_SPEEDS[marchSpeed.value].exhaustionChance;
+    const exhaustionChance = Math.floor(
+      union.value.exhaustionSusceptibilityMultiplier *
+        MARCHING_SPEEDS[marchSpeed.value].exhaustionChance,
+    );
 
     // Calculate the number of exhausted soldiers who will die.
     // We do this first so that the newly exhausted soldiers don't immediately die.
@@ -361,7 +445,7 @@ const useGame = defineStore('game-state-machine', () => {
       state.value = GameState.DESTINATION_INTRO;
 
     // Add march results to the daily results.
-    addMarchResults(results, days.value.state);
+    addDailyMarchResults(results, days.value.state);
     // Advance the day.
     advanceDay();
     // Return the results of the march.
@@ -406,28 +490,34 @@ const useGame = defineStore('game-state-machine', () => {
       );
     // Do starvation calculations.
     results.starvedUnits = union.value.doStarve();
-    // Calculate the rate at which soldiers recover from exhaustion.
-    const exhaustionRecoveryRate = Math.floor(
-      calibrateExponential(union.value.nutrition, [
-        {
-          input: 50,
-          output: 0,
-        },
-        {
-          input: 100,
-          output: 100,
-        },
-      ]),
-    );
-    // Calculate the number of soldiers who recover from exhaustion.
-    results.recoveredExhaustedSoldiers = chanceMultiple(
-      exhaustionRecoveryRate,
-      union.value.exhausted,
-    );
-    // Subtract the newly recovered soldiers from the number of exhausted soldiers.
-    union.value.exhausted -= results.recoveredExhaustedSoldiers;
-    // Add the newly recovered soldiers to the number of alive soldiers.
-    union.value.alive += results.recoveredExhaustedSoldiers;
+    // Get daily results from today (we haven't advanced the day yet)
+    const yesterdayResults = getDailyResults(days.value);
+    // Don't allow exhaustion recovery if they marched today.
+    if (!yesterdayResults?.march) {
+      // Calculate the rate at which soldiers recover from exhaustion.
+      const exhaustionRecoveryRate = Math.floor(
+        calibrateExponential(union.value.nutrition, [
+          {
+            input: 50,
+            output: 0,
+          },
+          {
+            input: 100,
+            output: 95,
+          },
+        ]),
+      );
+      // Calculate the number of soldiers who recover from exhaustion.
+      results.recoveredExhaustedSoldiers = chanceMultiple(
+        exhaustionRecoveryRate,
+        union.value.exhausted,
+      );
+      // Subtract the newly recovered soldiers from the number of exhausted soldiers.
+      union.value.exhausted -= results.recoveredExhaustedSoldiers;
+      // Add the newly recovered soldiers to the number of alive soldiers.
+      union.value.alive += results.recoveredExhaustedSoldiers;
+    } else results.recoveredExhaustedSoldiers = 0;
+
     // Kill infected soldiers from yesterday
     results.deadInfectedSoldiers = union.value.infected;
     union.value.dead += union.value.infected;
@@ -447,13 +537,8 @@ const useGame = defineStore('game-state-machine', () => {
     union.value.alive += results.recoveredWoundedSoldiers;
     // Allow the Confederacy to recover a small amount of morale.
     confederacy.value.morale += 2;
-    // Call onDayAdvance functions for both forces.
-    union.value.onDayAdvance();
-    confederacy.value.onDayAdvance();
-    // Set the Confederacy's nutrition to 50%.
-    confederacy.value.nutrition = 50;
     // Add day results to the daily results.
-    addDayResults(results, days.value.state);
+    addDailyDayResults(results, days.value.state);
     // Advance the day.
     days.value.step();
     // Set skipRationing for the next day according to the ration frequency.
@@ -473,17 +558,17 @@ const useGame = defineStore('game-state-machine', () => {
     // If any of the soldiers had their health status changed, notify the player.
     if (
       (yesterdayResults[1].day &&
-        (yesterdayResults[1].day?.recoveredWoundedSoldiers > 0 ||
-          yesterdayResults[1].day?.infectedWoundedSoldiers > 0 ||
-          yesterdayResults[1].day?.recoveredExhaustedSoldiers > 0 ||
-          yesterdayResults[1].day?.deadInfectedSoldiers > 0 ||
-          yesterdayResults[1].day?.starvedUnits.alive > 0 ||
-          yesterdayResults[1].day?.starvedUnits.exhausted > 0 ||
-          yesterdayResults[1].day?.starvedUnits.wounded > 0 ||
-          yesterdayResults[1].day?.starvedUnits.infected > 0)) ||
+        (yesterdayResults[1].day.recoveredWoundedSoldiers > 0 ||
+          yesterdayResults[1].day.infectedWoundedSoldiers > 0 ||
+          yesterdayResults[1].day.recoveredExhaustedSoldiers > 0 ||
+          yesterdayResults[1].day.deadInfectedSoldiers > 0 ||
+          yesterdayResults[1].day.starvedUnits.alive > 0 ||
+          yesterdayResults[1].day.starvedUnits.exhausted > 0 ||
+          yesterdayResults[1].day.starvedUnits.wounded > 0 ||
+          yesterdayResults[1].day.starvedUnits.infected > 0)) ||
       (yesterdayResults[1].march &&
-        (yesterdayResults[1].march?.exhaustedSoldiers > 0 ||
-          yesterdayResults[1].march?.deadExhaustedSoldiers > 0))
+        (yesterdayResults[1].march.exhaustedSoldiers > 0 ||
+          yesterdayResults[1].march.deadExhaustedSoldiers > 0))
     ) {
       showToast(
         'Yesterday, your soldiers experienced some changes in their health status. You can view the details in the military status panel.',
@@ -500,6 +585,14 @@ const useGame = defineStore('game-state-machine', () => {
       powder: 0,
       medkits: 0,
     };
+    // If for some reason we already searched for supplies at this destination, return early.
+    if (
+      getDestinationAction(
+        currentDestination.value!,
+        DestinationActions.SEARCH_FOR_SUPPLIES,
+      ) !== null
+    )
+      return results;
     // If we are for some reason not at a destination, return early.
     if (currentDestination.value === null) return results;
     // Calculate how many supplies we will find.
@@ -525,14 +618,14 @@ const useGame = defineStore('game-state-machine', () => {
     supplies.value.powder += results.powder;
     supplies.value.medkits += results.medkits;
 
-    // Advance the day.
-    advanceDay();
     // Save the action performed, and the supplies found.
     addDestinationAction(
       currentDestination.value,
       DestinationActions.SEARCH_FOR_SUPPLIES,
       results,
     );
+    // Advance the day.
+    advanceDay();
     // Return the results of the search.
     return results;
   }
@@ -544,6 +637,14 @@ const useGame = defineStore('game-state-machine', () => {
       moraleChange: 0,
       affectsSupplyAvailability: !leadersOnly,
     };
+    // If for some reason we already killed civilians at this destination, return early.
+    if (
+      getDestinationAction(
+        currentDestination.value!,
+        DestinationActions.KILL_ALL_CIVILIANS,
+      ) !== null
+    )
+      return results;
     // If we are for some reason not at a destination, return early.
     if (currentDestination.value === null) return 0;
     // If the destination has no population, return early.
@@ -572,13 +673,13 @@ const useGame = defineStore('game-state-machine', () => {
       ]),
     );
     confederacy.value.morale -= results.moraleChange;
-    advanceDay();
     // Save the action performed, and the number of civilians killed.
     addDestinationAction(
       currentDestination.value,
       DestinationActions.KILL_ALL_CIVILIANS,
       results,
     );
+    advanceDay();
     // Return the number of civilians killed.
     return results;
   }
@@ -588,6 +689,14 @@ const useGame = defineStore('game-state-machine', () => {
     const results = {
       moraleChange: 0,
     };
+    // If for some reason we already destroyed a railroad at this destination, return early.
+    if (
+      getDestinationAction(
+        currentDestination.value!,
+        DestinationActions.DESTROY_RAILROAD,
+      ) !== null
+    )
+      return results;
     // If we are for some reason not at a destination, return early.
     if (currentDestination.value === null) return 0;
     // If the destination has no railroad, return early.
@@ -595,13 +704,13 @@ const useGame = defineStore('game-state-machine', () => {
     // Calculate how much that affects the Confederacy's morale.
     results.moraleChange = Math.floor(confederacy.value.morale / 8 / 2);
     confederacy.value.morale -= results.moraleChange;
-    advanceDay();
     // Save the action performed.
     addDestinationAction(
       currentDestination.value,
       DestinationActions.DESTROY_RAILROAD,
       results,
     );
+    advanceDay();
     // Return the results of the destruction.
     return results;
   }
@@ -611,6 +720,14 @@ const useGame = defineStore('game-state-machine', () => {
     const results = {
       moraleChange: 0,
     };
+    // If for some reason we already destroyed a supply depot at this destination, return early.
+    if (
+      getDestinationAction(
+        currentDestination.value!,
+        DestinationActions.DESTROY_SUPPLY_DEPOT,
+      ) !== null
+    )
+      return results;
     // If we are for some reason not at a destination, return early.
     if (currentDestination.value === null) return 0;
     // If the destination has no supply depot, return early.
@@ -619,13 +736,13 @@ const useGame = defineStore('game-state-machine', () => {
     // Calculate how much that affects the Confederacy's morale.
     results.moraleChange = Math.floor(confederacy.value.morale / 8 / 2);
     confederacy.value.morale -= results.moraleChange;
-    advanceDay();
     // Save the action performed.
     addDestinationAction(
       currentDestination.value,
       DestinationActions.DESTROY_SUPPLY_DEPOT,
       results,
     );
+    advanceDay();
     // Return the results of the destruction.
     return results;
   }
@@ -635,6 +752,14 @@ const useGame = defineStore('game-state-machine', () => {
     const results = {
       moraleChange: 0,
     };
+    // If for some reason we already destroyed agriculture at this destination, return early.
+    if (
+      getDestinationAction(
+        currentDestination.value!,
+        DestinationActions.DESTROY_AGRICULTURE,
+      ) !== null
+    )
+      return results;
     // If we are for some reason not at a destination, return early.
     if (currentDestination.value === null) return 0;
     // If the destination has no agriculture, return early.
@@ -643,13 +768,13 @@ const useGame = defineStore('game-state-machine', () => {
     // Calculate how much that affects the Confederacy's morale.
     results.moraleChange = Math.floor(confederacy.value.morale / 8 / 2);
     confederacy.value.morale -= results.moraleChange;
-    advanceDay();
     // Save the action performed.
     addDestinationAction(
       currentDestination.value,
       DestinationActions.DESTROY_AGRICULTURE,
       results,
     );
+    advanceDay();
     // Return the results of the destruction.
     return results;
   }
@@ -659,6 +784,14 @@ const useGame = defineStore('game-state-machine', () => {
     const results = {
       moraleChange: 0,
     };
+    // If for some reason we already destroyed industry at this destination, return early.
+    if (
+      getDestinationAction(
+        currentDestination.value!,
+        DestinationActions.DESTROY_INDUSTRY,
+      ) !== null
+    )
+      return results;
     // If we are for some reason not at a destination, return early.
     if (currentDestination.value === null) return 0;
     // If the destination has no industry, return early.
@@ -666,27 +799,34 @@ const useGame = defineStore('game-state-machine', () => {
     // Calculate how much that affects the Confederacy's morale.
     results.moraleChange = Math.floor(confederacy.value.morale / 8 / 2);
     confederacy.value.morale -= results.moraleChange;
-    advanceDay();
     // Save the action performed.
     addDestinationAction(
       currentDestination.value,
       DestinationActions.DESTROY_INDUSTRY,
       results,
     );
+    advanceDay();
     // Return the results of the destruction.
     return results;
   }
 
   function useMedkits(amount: number, injuriesToHeal: 'wounded' | 'infected') {
+    let results = {
+      healedWounded: 0,
+      healedInfected: 0,
+    };
     if (supplies.value.medkits < amount) return false;
     supplies.value.medkits -= amount;
     if (injuriesToHeal === 'wounded') {
       union.value.wounded -= amount;
       union.value.alive += amount;
+      results.healedWounded = amount;
     } else if (injuriesToHeal === 'infected') {
       union.value.infected -= amount;
       union.value.alive += amount;
+      results.healedInfected = amount;
     }
+    addDailyMedkitResults(results, days.value.state);
     return true;
   }
 
@@ -729,17 +869,19 @@ const useGame = defineStore('game-state-machine', () => {
     distance,
     marchSpeed,
     rationFrequency,
+    supplies,
+    destinationActionsPerformed,
+    skipRationing,
+    dailyResults,
     visitedDestinations,
     unvisitedDestinations,
     previousDestination,
     nextDestination,
     distanceToNextDestination,
     currentDestination,
-    supplies,
-    destinationActionsPerformed,
-    skipRationing,
-    dailyResults,
+    isDebug,
     subscribe,
+    unsubscribe,
     addDestinationAction,
     getDestinationActions,
     getDestinationAction,

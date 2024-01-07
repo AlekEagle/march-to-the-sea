@@ -1,4 +1,4 @@
-import { calibrateLinear, calibratePolynomial } from '@/utils/Range';
+import { calibrateLinear, calibrateExponential } from '@/utils/Range';
 import { chanceMultiple } from '@/utils/Random';
 
 interface Units {
@@ -123,23 +123,18 @@ export default class MilitaryForce {
     );
   }
 
-  public get susceptibilityMultiplier(): number {
+  public get exhaustionSusceptibilityMultiplier(): number {
     return calibrateLinear(this._nutrition, [
       { input: 0, output: 2 },
-      { input: 100, output: 0.5 },
+      { input: 100, output: 0.25 },
     ]);
   }
 
-  public onDayAdvance() {
-    this._nutrition -= 2;
-    if (this._nutrition < 0) this._nutrition = 0;
-  }
-
   public ration(count: number) {
-    const addend = count * 10;
+    const addend = count * 5;
     const commit = () => {
       this._nutrition += addend;
-      if (this._nutrition > 0) this._nutrition = 100;
+      if (this._nutrition > 100) this._nutrition = 100;
     };
     return {
       cost:
@@ -156,7 +151,7 @@ export default class MilitaryForce {
   public doStarve() {
     // Calculate rate of starvation.
     const starvationRate = Math.floor(
-      calibratePolynomial(this.nutrition, 3, [
+      calibrateExponential(this.nutrition, [
         {
           input: 50,
           output: 0,

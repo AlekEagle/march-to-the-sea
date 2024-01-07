@@ -70,10 +70,8 @@
   }
 
   async function begin() {
-    if (window.location.search.includes('skip-intro')) {
-      game.state = GameState.START_MENU;
-      return;
-    }
+    if (game.isDebug) return;
+
     // Reset shouldStop
     shouldStop.value = false;
     // Listen for clicks on the page

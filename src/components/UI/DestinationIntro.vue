@@ -1,5 +1,10 @@
 <template>
-  <EnterExitSlide ref="enterExitSlide" cancellable>
+  <EnterExitSlide
+    ref="enterExitSlide"
+    cancellable
+    full-size
+    style="position: absolute; z-index: 0"
+  >
     <h1>Welcome to {{ game.currentDestination?.name }}</h1>
     <h2 v-text="game.currentDestination?.description" />
     <h3
@@ -18,15 +23,13 @@
   // Data
   import GameState from '@/data/GameState';
   // Other
-  import { wait } from '@/utils/Wait';
   import { ref } from 'vue';
 
   const enterExitSlide = ref<typeof EnterExitSlide>();
   const game = useGame();
 
   async function show() {
-    await wait(100);
-    await enterExitSlide.value?.begin();
+    await enterExitSlide.value?.begin(true);
     game.state = GameState.DESTINATION;
   }
 
@@ -38,5 +41,6 @@
 <style scoped>
   div {
     padding: 0 1rem;
+    width: calc(100vw - 2rem) !important;
   }
 </style>

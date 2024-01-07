@@ -52,7 +52,7 @@
   }
 
   // This function is called by the parent component to begin the animation.
-  function begin(): Promise<void> {
+  function begin(resolveOnHideStart: boolean = false): Promise<void> {
     return new Promise(async (resolve) => {
       // If the animation is already running, immediately resolve this promise.
       if (isAnimating.value) {
@@ -68,7 +68,7 @@
 
       // If the animation is cancellable, add a click listener to the body.
       if (props.cancellable) {
-        document.body.addEventListener('click', cancelAnimation, {
+        document.body.addEventListener('mousedown', cancelAnimation, {
           once: true,
         });
       }
@@ -88,6 +88,9 @@
       // Otherwise, hide the element.
       visible.value = false;
 
+      // if the caller wants to resolve when the hide animation starts, do so now.
+      if (resolveOnHideStart) resolve();
+
       // Wait for the exit animation to finish.
       await new Promise((resolve) => setTimeout(resolve, 1e3));
 
@@ -95,10 +98,10 @@
       isAnimating.value = false;
 
       // Remove the click listener from the body.
-      document.body.removeEventListener('click', cancelAnimation);
+      document.body.removeEventListener('mousedown', cancelAnimation);
 
-      // Resolve.
-      resolve();
+      // If we didn't resolve earlier, resolve now.
+      if (!resolveOnHideStart) resolve();
     });
   }
 
@@ -110,6 +113,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
   }
 
   div.full-size {
