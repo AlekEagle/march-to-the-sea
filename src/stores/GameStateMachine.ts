@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
+import { ref, computed, Ref } from 'vue';
 
 // === Constants ===
 import GameState from '@/data/GameState';
@@ -11,7 +11,7 @@ import DestinationActions from '@/data/DestinationActions';
 import MilitaryForce from '@/data/MilitaryForce';
 import GameDate, { Months, GameDateState } from '@/data/GameDate';
 import Constants from '@/data/Constants';
-import { chanceMultiple, randomInt } from '@/utils/Random';
+import { chance, chanceMultiple, randomInt } from '@/utils/Random';
 import { calibrateExponential, calibrateLinear } from '@/utils/Range';
 import TownFeatures from '@/data/TownFeatures';
 import SubscriptionService, {
@@ -20,6 +20,7 @@ import SubscriptionService, {
 } from '@/utils/SubscriptionService';
 import { useToast, TYPE as ToastType, POSITION } from 'vue-toastification';
 import { ToastID } from 'vue-toastification/dist/types/types';
+import Encounter, { EncounterResults } from '@/data/Encounter';
 
 // === Types ===
 
@@ -35,6 +36,13 @@ export type DestinationActionsPointer = {
 
 export type DestinationActionsPerformed = {
   [key in (typeof DESTINATIONS)[number]['name']]?: DestinationActionsPerformedDestination;
+};
+
+export type SupplyInventory = {
+  food: number;
+  bullets: number;
+  powder: number;
+  medkits: number;
 };
 
 export type DayResults = {
@@ -61,15 +69,12 @@ export type MedkitResults = {
   healedWounded: number;
   healedInfected: number;
 };
-
-// TODO: EncounterResults type
-
 export type DailyResults = {
   day: DayResults | null;
   march: MarchResults | null;
   destinationAction: DestinationActionsPointer | null;
   medkit: MedkitResults | null;
-  encounter: any | null; // TODO: EncounterResults type
+  encounter: EncounterResults | null;
 };
 
 export type DailyResultsRecord = [GameDateState, DailyResults];
@@ -82,18 +87,16 @@ const useGame = defineStore('game-state-machine', () => {
   const state = ref(GameState.INTRO),
     // == Military Forces ==
     // Union data
-    union = ref<MilitaryForce>(new MilitaryForce(62_000, 100, 1, 29, 65, true)),
+    union = ref(new MilitaryForce(62_000, 100, 1, 29, 35, true)),
     // Confederacy data
-    confederacy = ref<MilitaryForce>(
-      new MilitaryForce(16_000, 75, 2, 34, 55, false),
-    ),
+    confederacy = ref(new MilitaryForce(16_000, 75, 2, 34, 25, false)),
     // == Game State Variables ==
     money = ref(Constants.DEFAULT_MONEY),
     days = ref(new GameDate(Months.November, 15)),
     distance = ref(0), // Miles from Atlanta
     marchSpeed = ref<MarchingSpeed>(Constants.DEFAULT_MARCH_SPEED),
     rationFrequency = ref<RationFrequency>(Constants.DEFAULT_RATION_FREQUENCY),
-    supplies = ref({
+    supplies = ref<SupplyInventory>({
       food: 0, // 1 unit of food = 1 day of food for 1 soldier
       bullets: 0, // 1 unit of bullets = 1 pouch of bullets for 1 soldier (1 pouch = 20 bullets)
       powder: 0, // 1 unit of powder = 1 pouch of powder for 1 soldier (1 pouch = 20 shots)
@@ -104,6 +107,7 @@ const useGame = defineStore('game-state-machine', () => {
     skipRationing = ref(false),
     // Daily results for historical data
     dailyResults = ref<DailyResultsRecord[]>([]),
+    encounter = ref<Encounter | null>(null),
     // === Computed Values ===
     // == Destinations ==
     // Destinations that have been visited
@@ -375,14 +379,47 @@ const useGame = defineStore('game-state-machine', () => {
     }
   }
 
+  // Add the results of an encounter to the daily results
+  function addDailyEncounterResults(
+    results: EncounterResults,
+    day: GameDateState,
+  ) {
+    // Check if there are already results for this day
+    const existingResults = dailyResults.value.find(
+      (dailyResults) => dailyResults[0].elapsed === day.elapsed,
+    );
+    // If there are, check they already have an encounter result
+    if (existingResults !== undefined) {
+      if (existingResults[1].encounter !== null) {
+        // If they do, throw an error
+        throw new Error(
+          `Attempted to add encounter results for day ${day.elapsed}, but encounter results already exist for that day.`,
+        );
+      } else {
+        // If they don't, add the encounter results
+        existingResults[1].encounter = results;
+      }
+    } else {
+      // If there aren't, add the encounter results
+      dailyResults.value.push([
+        day,
+        {
+          day: null,
+          march: null,
+          destinationAction: null,
+          encounter: results,
+          medkit: null,
+        },
+      ]);
+    }
+  }
+
   function getDailyResults(day: GameDateState) {
     const results = dailyResults.value.find(
       (dailyResults) => dailyResults[0].elapsed === day.elapsed,
     );
     return results?.[1];
   }
-
-  // TODO: Add encounter results
 
   // == Game State Methods ==
   // Purchase supplies during REQUISITION_SUPPLIES state
@@ -830,17 +867,50 @@ const useGame = defineStore('game-state-machine', () => {
     return true;
   }
 
+  function shouldBeginEncounter(): boolean {
+    if (currentDestination.value === null) return false;
+    if (currentDestination.value.encounter === null) return false;
+    if (!chance(currentDestination.value.encounter.chance)) return false;
+    const unionUnitsAvailable = Math.min(
+        union.value.alive, // Only alive healthy soldiers can fight
+        Constants.MAX_UNION_BATTALION_SIZE, // At most 4,000 union soldiers can fight
+      ),
+      confederacyUnitsAvailable = randomInt(
+        currentDestination.value.encounter.min,
+        currentDestination.value.encounter.max,
+      );
+
+    // Create the encounter.
+    const newEncounter = new Encounter(
+      unionUnitsAvailable,
+      confederacyUnitsAvailable,
+    );
+    // Set the encounter.
+    encounter.value = newEncounter;
+    // Return true.
+    return true;
+  }
+
+  function stepEncounter() {
+    if (encounter.value === null) return;
+    encounter.value.step(
+      union as Ref<MilitaryForce>,
+      confederacy as Ref<MilitaryForce>,
+      supplies,
+    );
+  }
+
   // === Toast Methods ===
   // Show a toast message.
   function showToast(
     message: string,
     type: keyof typeof ToastType = 'DEFAULT',
-    duration: number = 5000,
+    timeout: number = 5000,
   ) {
     return toast(message, {
       position: POSITION.BOTTOM_CENTER,
       type: ToastType[type],
-      timeout: duration,
+      timeout,
       closeOnClick: true,
       pauseOnFocusLoss: true,
       pauseOnHover: true,
@@ -873,6 +943,7 @@ const useGame = defineStore('game-state-machine', () => {
     destinationActionsPerformed,
     skipRationing,
     dailyResults,
+    encounter,
     visitedDestinations,
     unvisitedDestinations,
     previousDestination,
@@ -895,6 +966,8 @@ const useGame = defineStore('game-state-machine', () => {
     destroyAgriculture,
     destroyIndustry,
     useMedkits,
+    shouldBeginEncounter,
+    stepEncounter,
     // Toast Variables & Methods
     showToast,
     hideToast,

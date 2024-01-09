@@ -164,18 +164,18 @@ export default class MilitaryForce {
     );
     // Calculate number of units that starve.
     let starvedUnits = {
-      alive: chanceMultiple(this._units.alive, starvationRate),
+      alive: chanceMultiple(starvationRate, this._units.alive),
       exhausted: chanceMultiple(
-        this._units.injured?.exhaustion ?? 0,
         starvationRate,
+        this._units.injured?.exhaustion ?? 0,
       ),
       wounded: chanceMultiple(
-        this._units.injured?.wounded ?? 0,
         starvationRate,
+        this._units.injured?.wounded ?? 0,
       ),
       infected: chanceMultiple(
-        this._units.injured?.infected ?? 0,
         starvationRate,
+        this._units.injured?.infected ?? 0,
       ),
     };
     // Apply starvation to all units.
@@ -187,7 +187,11 @@ export default class MilitaryForce {
     }
 
     // Add the total of all starved units to the dead units.
-    this._units.dead += starvedUnits.alive + starvedUnits.exhausted + starvedUnits.wounded + starvedUnits.infected;
+    this._units.dead +=
+      starvedUnits.alive +
+      starvedUnits.exhausted +
+      starvedUnits.wounded +
+      starvedUnits.infected;
 
     // Return the number of units that starved.
     return starvedUnits;

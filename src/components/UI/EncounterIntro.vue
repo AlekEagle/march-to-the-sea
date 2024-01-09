@@ -5,24 +5,25 @@
     full-size
     style="position: absolute; z-index: 0"
   >
-    <h1>Welcome to {{ game.currentDestination?.name }}</h1>
-    <h2 v-text="game.currentDestination?.description" />
-    <h3
-      v-text="
-        `Population: ${game.currentDestination?.population.toLocaleString()}`
-      "
-    />
+    <h1>Get ready to fight!</h1>
+    <h2>{{ game.encounter!.union.engaged.toLocaleString() }} Union soldiers</h2>
+    <img src="@/assets/images/vs.png" alt="vs" />
+    <h2>
+      Roughly
+      {{
+        (
+          Math.round(game.encounter!.confederate.engaged / 10) * 10
+        ).toLocaleString()
+      }}
+      Confederate soldiers
+    </h2>
   </EnterExitSlide>
 </template>
 
 <script lang="ts" setup>
-  // Vue Components
   import EnterExitSlide from '@/components/Animation/EnterExitSlide.vue';
-  // Stores
   import useGame from '@/stores/GameStateMachine';
-  // Data
   import GameState from '@/data/GameState';
-  // Other
   import { ref } from 'vue';
 
   const enterExitSlide = ref<typeof EnterExitSlide>();
@@ -30,16 +31,14 @@
 
   async function show() {
     await enterExitSlide.value?.begin(true);
-    if (game.shouldBeginEncounter()) game.state = GameState.ENCOUNTER_INTRO;
-    else game.state = GameState.DESTINATION;
+    game.state = GameState.ENCOUNTER;
   }
 
-  game.subscribe(show, GameState.DESTINATION_INTRO);
+  game.subscribe(show, GameState.ENCOUNTER_INTRO);
 </script>
 
 <style scoped>
-  div {
-    padding: 0 1rem;
-    width: calc(100vw - 2rem) !important;
+  img {
+    height: 5rem;
   }
 </style>

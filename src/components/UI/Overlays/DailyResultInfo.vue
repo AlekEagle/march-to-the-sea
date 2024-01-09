@@ -72,7 +72,7 @@
             {{
               currentDayObserving[1].day.recoveredWoundedSoldiers.toLocaleString()
             }}
-            of your infected soldiers recovered.
+            of your wounded soldiers recovered.
           </p>
           <!-- Dead infected units -->
           <p v-if="currentDayObserving[1].day.deadInfectedSoldiers > 0">
@@ -86,7 +86,28 @@
           class="history-item"
           v-if="currentDayObserving[1].destinationAction"
         >
-          <h3>Actions</h3>
+          <h3>Action</h3>
+          <p v-text="actionText" />
+        </div>
+        <div class="history-item" v-if="currentDayObserving[1].march">
+          <h3>March</h3>
+          <p
+            v-text="
+              `You marched ${currentDayObserving[1].march.distanceTraveled} miles.`
+            "
+          />
+          <p
+            v-if="currentDayObserving[1].march.exhaustedSoldiers > 0"
+            v-text="
+              `${currentDayObserving[1].march.exhaustedSoldiers} became exhausted during the march from overexertion.`
+            "
+          />
+          <p
+            v-if="currentDayObserving[1].march.deadExhaustedSoldiers > 0"
+            v-text="
+              `${currentDayObserving[1].march.deadExhaustedSoldiers} died from exhaustion from overexertion.`
+            "
+          />
         </div>
       </div>
     </template>
@@ -101,6 +122,8 @@
   import useGame, { DailyResultsRecord } from '@/stores/GameStateMachine';
   // Data
   import GameState from '@/data/GameState';
+  import DestinationActions from '@/data/DestinationActions';
+  import DESTINATIONS from '@/data/Destinations';
   // Other
   import { ref, computed } from 'vue';
   import GameDate from '@/data/GameDate';
@@ -116,6 +139,33 @@
     observingDayDate = computed<GameDate | null>(() => {
       if (currentDayObserving.value === null) return null;
       return GameDate.fromState(currentDayObserving.value[0]);
+    }),
+    actionText = computed<string | null>(() => {
+      if (currentDayObserving.value === null) return null;
+      const action = currentDayObserving.value[1].destinationAction;
+      if (action === null) return null;
+      const actionData = game.getDestinationAction(
+        DESTINATIONS.find((d) => d.name === action.location)!,
+        action.action,
+      );
+      switch (action.action) {
+        case DestinationActions.KILL_ALL_CIVILIANS:
+          return `You killed ${actionData?.civiliansKilled.toLocaleString()} ${
+            actionData?.affectsSupplyAvailability ? 'civilians' : 'town leaders'
+          }.`;
+        case DestinationActions.SEARCH_FOR_SUPPLIES:
+          return `You searched for supplies and found ${actionData?.food.toLocaleString()} rations, ${actionData?.bullets.toLocaleString()} pouches of bullets, ${actionData?.powder.toLocaleString()} pouches of powder, and ${actionData?.medkits.toLocaleString()} medkits.`;
+        case DestinationActions.DESTROY_RAILROAD:
+          return `You destroyed the railroad.`;
+        case DestinationActions.DESTROY_SUPPLY_DEPOT:
+          return `You destroyed the supply depot.`;
+        case DestinationActions.DESTROY_AGRICULTURE:
+          return `You destroyed the agriculture.`;
+        case DestinationActions.DESTROY_INDUSTRY:
+          return `You destroyed the industry.`;
+        default:
+          return null;
+      }
     });
 
   function show() {

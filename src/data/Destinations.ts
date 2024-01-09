@@ -65,8 +65,8 @@ const DESTINATIONS: Destination[] = [
     features: TownFeatures.RAILROADS | TownFeatures.AGRICULTURE,
     encounter: {
       chance: 4,
-      min: 12,
-      max: 36,
+      min: 120,
+      max: 360,
     },
     description:
       'Decatur is a small town just outside of Atlanta. It is home to a Confederate supply depot, and is the first stop on your journey.',
@@ -175,8 +175,8 @@ const DESTINATIONS: Destination[] = [
     features: TownFeatures.RAILROADS | TownFeatures.SUPPLY_DEPOT,
     encounter: {
       chance: 46,
-      min: 24,
-      max: 48,
+      min: 240,
+      max: 480,
     },
     description:
       'A decently sized town. It is home to a Confederate supply depot.',
@@ -206,8 +206,8 @@ const DESTINATIONS: Destination[] = [
     features: TownFeatures.RAILROADS | TownFeatures.INDUSTRY,
     encounter: {
       chance: 35,
-      min: 40,
-      max: 80,
+      min: 400,
+      max: 800,
     },
     description:
       'A decently sized town. It is home to cotton and general manufacturing factories.',
@@ -240,8 +240,8 @@ const DESTINATIONS: Destination[] = [
       TownFeatures.AGRICULTURE,
     encounter: {
       chance: 20,
-      min: 60,
-      max: 120,
+      min: 600,
+      max: 1_200,
     },
     description:
       'A decently sized town. It is home to a Confederate supply depot and a cotton plantation.',
@@ -302,8 +302,8 @@ const DESTINATIONS: Destination[] = [
     features: TownFeatures.RAILROADS | TownFeatures.SUPPLY_DEPOT,
     encounter: {
       chance: 40,
-      min: 10,
-      max: 100,
+      min: 100,
+      max: 1_000,
     },
     description:
       'A small company town for a depot on the Central of Georgia Railroad.',
@@ -359,8 +359,8 @@ const DESTINATIONS: Destination[] = [
     features: 0,
     encounter: {
       chance: 10,
-      min: 10,
-      max: 80,
+      min: 700,
+      max: 1_000,
     },
     description: 'A small town with less than 1,000 people.',
     population: 800,
@@ -387,7 +387,11 @@ const DESTINATIONS: Destination[] = [
     name: 'Louisville',
     distance: 271,
     features: 0,
-    encounter: null,
+    encounter: {
+      chance: 25,
+      min: 900,
+      max: 1_200,
+    },
     description: 'A small town with less than 1,000 people.',
     population: 800,
     supplies: {
@@ -503,5 +507,43 @@ const DESTINATIONS: Destination[] = [
     },
   },
 ];
+
+if (import.meta.env.DEV) {
+  // Remove atlanta from the list of destinations temporarily
+  const atlanta = DESTINATIONS.shift();
+  // unshift a test destination to the beginning of the list
+  DESTINATIONS.unshift({
+    name: 'Test',
+    distance: 1,
+    features: 0,
+    encounter: {
+      chance: 100,
+      min: 10_000,
+      max: 10_000,
+    },
+    description: 'This is a test destination',
+    population: 1_000_000,
+    supplies: {
+      food: {
+        min: 9_999,
+        max: 9_999,
+      },
+      bullets: {
+        min: 9_999,
+        max: 9_999,
+      },
+      powder: {
+        min: 9_999,
+        max: 9_999,
+      },
+      medkits: {
+        min: 9_999,
+        max: 9_999,
+      },
+    },
+  });
+  // Re-add atlanta to the beginning of the list
+  DESTINATIONS.unshift(atlanta!);
+}
 
 export default DESTINATIONS;

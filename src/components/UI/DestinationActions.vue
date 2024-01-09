@@ -15,7 +15,7 @@
     <h1>Available Actions</h1>
     <div class="action-buttons">
       <template
-        v-if="!game.getDestinationAction(game.currentDestination!, DestinationActions.KILL_ALL_CIVILIANS)"
+        v-if="!game.getDestinationAction(game.currentDestination!, DestinationActions.KILL_ALL_CIVILIANS) && game.currentDestination?.population !== 0"
       >
         <button
           @click="actionConfirm?.show(DestinationActions.KILL_ALL_CIVILIANS)"

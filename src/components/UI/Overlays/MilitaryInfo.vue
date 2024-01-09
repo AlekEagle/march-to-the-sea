@@ -71,9 +71,7 @@
           <h4 title="How accurate the union army is with their rifles.">
             Accuracy: {{ game.union.accuracy.toFixed(2) }}%
           </h4>
-          <h4
-            title="How strong a union soldier is in physical combat. For example, if a union soldier with 3 strength encounters a confederate soldier with 2 strength, the union soldiers odds of winning the fight is 3/5, the 5 coming from the sum of both units' strength."
-          >
+          <h4 title="How strong a union soldier is in physical combat.">
             Strength: {{ game.union.strength.toFixed(2) }}
           </h4>
         </div>

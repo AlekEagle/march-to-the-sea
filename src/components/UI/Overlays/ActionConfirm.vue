@@ -98,7 +98,7 @@
       default:
         game.showToast('Whoops!');
     }
-    await menuSlide.value?.hide();
+    menuSlide.value?.hide();
     actionResult.value?.show(destinationAction.value);
   }
 
