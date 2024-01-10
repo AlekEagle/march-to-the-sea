@@ -21,9 +21,13 @@
 </template>
 
 <script lang="ts" setup>
+  // Vue Components
   import EnterExitSlide from '@/components/Animation/EnterExitSlide.vue';
+  // Stores
   import useGame from '@/stores/GameStateMachine';
+  // Data
   import GameState from '@/data/GameState';
+  // Other
   import { ref } from 'vue';
 
   const enterExitSlide = ref<typeof EnterExitSlide>();

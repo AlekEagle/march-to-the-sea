@@ -6,10 +6,18 @@
         game.state === GameState.MARCHING
       "
     >
-      <button id="options" @click="game.state = GameState.OPTIONS">
+      <button
+        id="options"
+        @click="game.state = GameState.OPTIONS"
+        :disabled="game.autoMarch"
+      >
         Options
       </button>
-      <button id="info" @click="game.state = GameState.MILITARY_INFO">
+      <button
+        id="info"
+        @click="game.state = GameState.MILITARY_INFO"
+        :disabled="game.autoMarch"
+      >
         View Military Info
       </button>
     </div>

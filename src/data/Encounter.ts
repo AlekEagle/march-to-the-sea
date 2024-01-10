@@ -4,9 +4,9 @@ import {
   RANKS_AVAILABLE_TO_FIGHT,
 } from '@/data/Constants';
 import { chance, chanceMultiple } from '@/utils/Random';
-import { SupplyInventory } from '@/stores/GameStateMachine';
-import { Ref } from 'vue';
-import MilitaryForce from './MilitaryForce';
+import type { SupplyInventory } from '@/stores/GameStateMachine';
+import type { Ref } from 'vue';
+import type MilitaryForce from './MilitaryForce';
 
 // The possible states of an encounter.
 export enum EncounterState {
@@ -134,6 +134,8 @@ export interface MeleeSubroutineResults {
 export type CombinedSubroutineResults = RangedSubroutineResults &
   MeleeSubroutineResults;
 
+export type EncounterVictoryCallback = (results: EncounterResults) => void;
+
 // The encounter class.
 export default class Encounter {
   private _state: EncounterState = EncounterState.RANGED_ONLY; // All encounters start ranged only.
@@ -151,8 +153,13 @@ export default class Encounter {
   };
   private _duration: number = 0; // Number of time steps the encounter lasted.
   private _timeStepResults: TimeStepResults<EncounterState>[] = [];
-
-  constructor(unionUnits: number, confederateUnits: number) {
+  constructor(
+    unionUnits: number,
+    confederateUnits: number,
+    private victoryCallback: EncounterVictoryCallback | null = null,
+    private confederacySupplyAvailability: number,
+    private isDestinationFort: boolean,
+  ) {
     this._union.engaged = unionUnits;
     this._confederate.engaged = confederateUnits;
   }
@@ -204,24 +211,42 @@ export default class Encounter {
     return true;
   }
 
+  private onVictory(result: EncounterVictory) {
+    this._victory = result;
+    if (this.victoryCallback) this.victoryCallback(this.results);
+  }
+
   private forcedRetreat(
     unionRef: Ref<MilitaryForce>,
     confederacyRef: Ref<MilitaryForce>,
-  ): EncounterVictory | null {
+  ): boolean {
     if (
-      ((this.union.casualties + this.union.wounded) / this.union.engaged) *
-        100 >=
+      (this.union.casualties / this.union.engaged) * 100 >=
       unionRef.value.retreatThreshold
     ) {
-      return EncounterVictory.CONFEDERATE_VICTORY;
+      this.onVictory(EncounterVictory.CONFEDERATE_VICTORY);
+      return true;
     }
     if (
       (this.confederate.casualties / this.confederate.engaged) * 100 >=
       confederacyRef.value.retreatThreshold
     ) {
-      return EncounterVictory.UNION_VICTORY;
+      this.onVictory(EncounterVictory.UNION_VICTORY);
+      return true;
     }
-    return null;
+    // If the encounter has lasted 12 hours (36 steps), it is a draw.
+    if (this.duration >= 36) {
+      this.onVictory(EncounterVictory.DRAW);
+      return true;
+    }
+    return false;
+  }
+
+  public retreat() {
+    // A retreat is only possible if at least 2 hours (6 steps) have passed.
+    if (this.duration < 6) return false;
+    this.onVictory(EncounterVictory.CONFEDERATE_VICTORY);
+    return true;
   }
 
   public step(
@@ -229,9 +254,6 @@ export default class Encounter {
     confederacyRef: Ref<MilitaryForce>,
     suppliesRef: Ref<SupplyInventory>,
   ): void {
-    // Check if either force met their forced retreat condition.
-    this._victory = this.forcedRetreat(unionRef, confederacyRef);
-
     // Decide how to handle the combat this step.
     switch (this._state) {
       case EncounterState.RANGED_ONLY:
@@ -244,7 +266,21 @@ export default class Encounter {
         this.meleeOnly(unionRef, confederacyRef);
         break;
     }
+
+    // Have a chance for the Confederacy to advance the fighting state.
+    if (
+      chance(
+        ((((this.confederate.casualties / this.confederate.engaged) * 100) /
+          confederacyRef.value.retreatThreshold) *
+          100) /
+          2,
+      )
+    )
+      this.advance();
+
     this._duration++;
+    // Check if either force met their forced retreat condition.
+    this.forcedRetreat(unionRef, confederacyRef);
   }
 
   private rangedSubroutine(
@@ -267,6 +303,9 @@ export default class Encounter {
         casualties: 0,
       },
     };
+    // If the destination is a fort, the Confederacy has an accuracy bonus of 5.
+    const confederateAccuracy =
+      confederacyRef.value.accuracy + (this.isDestinationFort ? 5 : 0);
     // Add the number of bullets and powder used to the encounter's totals.
     rangedResults.union.powder += rangedResults.union.bullets +=
       unionUnitsFiring;
@@ -276,7 +315,7 @@ export default class Encounter {
         unionUnitsFiring * 20, // 20 shots per soldier per step.
       ),
       confederateShotsHit = chanceMultiple(
-        confederacyRef.value.accuracy,
+        confederateAccuracy,
         confederateUnitsFiring * 20,
       );
     // Calculate the number of casualties.
@@ -289,7 +328,8 @@ export default class Encounter {
       unionShotsHit,
     );
     // Calculate the number of wounded.
-    rangedResults.union.wounded += confederateShotsHit - this._union.casualties;
+    rangedResults.union.wounded +=
+      confederateShotsHit - rangedResults.union.casualties;
     return rangedResults;
   }
 
@@ -311,18 +351,31 @@ export default class Encounter {
         casualties: 0,
       },
     };
+    // If the destination is a fort, the Confederacy has a strength bonus of 1.
+    const confederateStrength =
+      confederacyRef.value.strength + (this.isDestinationFort ? 1 : 0);
     // Calculate the number of 2v1s that will occur if the forces are uneven.
     const twoOnOne = Math.abs(unionUnitsFighting - confederateUnitsFighting),
       unionAdvantage = unionUnitsFighting > confederateUnitsFighting;
     // Calculate the odds of a 2v1 resulting in a victory.
     const unionTwoOnOneStrength = unionRef.value.strength * 2,
-      confederateTwoOnOneStrength = confederacyRef.value.strength * 2,
-      unionTwoOnOneOdds =
-        unionTwoOnOneStrength /
-        (unionTwoOnOneStrength + confederacyRef.value.strength),
-      confederateTwoOnOneOdds =
-        unionRef.value.strength /
-        (unionRef.value.strength + confederateTwoOnOneStrength);
+      confederateTwoOnOneStrength = confederateStrength * 2,
+      unionTwoOnOneOdds = Math.round(
+        (unionTwoOnOneStrength /
+          (unionTwoOnOneStrength + confederateStrength)) *
+          100,
+      ),
+      confederateTwoOnOneOdds = Math.round(
+        (unionRef.value.strength /
+          (unionRef.value.strength + confederateTwoOnOneStrength)) *
+          100,
+      ),
+      // Calculate the odds of a 1v1 resulting in a victory.
+      standardOdds = Math.round(
+        (unionRef.value.strength /
+          (unionRef.value.strength + confederateStrength)) *
+          100,
+      );
 
     // Get ready to keep track of the number of soldiers left to fight.
     let unionUnitsLeft = unionUnitsFighting,
@@ -378,7 +431,7 @@ export default class Encounter {
 
     // Calculate the number of casualties and wounded for the remaining soldiers.
     let remainingResults = new Array(unionUnitsLeft).fill(0).map(() => {
-      return [chance(unionRef.value.strength), chance(unionRef.value.strength)];
+      return [chance(standardOdds), chance(standardOdds)];
     }) as MeleeResult[];
 
     const remainingStub = this.processMeleeResults(remainingResults);
@@ -453,12 +506,13 @@ export default class Encounter {
     const unionUnitsFiring = Math.min(
         suppliesRef.value.bullets,
         suppliesRef.value.powder,
-        this.union.engaged - (this.union.casualties + this.union.wounded),
+        this.union.engaged - this.union.casualties,
         RANK_SIZE * RANKS_AVAILABLE_TO_FIGHT,
       ),
       confederateUnitsFiring = Math.min(
         this.confederate.engaged - this.confederate.casualties,
         RANK_SIZE * RANKS_AVAILABLE_TO_FIGHT,
+        this.confederacySupplyAvailability < 20 ? 0 : Infinity, // If the Confederacy's supply availability is less than 20%, they don't have enough supplies to fire.
       );
 
     // Run the ranged subroutine.
@@ -468,7 +522,6 @@ export default class Encounter {
       unionUnitsFiring,
       confederateUnitsFiring,
     );
-    this.addTimeStepResults(rangedResults);
     // Update the interim results.
     combinedResults.union.casualties += rangedResults.union.casualties;
     combinedResults.union.wounded += rangedResults.union.wounded;
@@ -478,10 +531,19 @@ export default class Encounter {
       rangedResults.confederate.casualties;
 
     // Calculate how many soldiers can fight this step.
-    const unionUnitsFighting =
-        this.union.engaged - (this.union.casualties + this.union.wounded),
-      confederateUnitsFighting =
-        this.confederate.engaged - this.confederate.casualties;
+    const unionUnitsFighting = Math.min(
+        this.union.engaged -
+          (this.union.casualties +
+            this.union.wounded +
+            combinedResults.union.casualties),
+        RANK_SIZE * RANKS_AVAILABLE_TO_FIGHT,
+      ),
+      confederateUnitsFighting = Math.min(
+        this.confederate.engaged -
+          (this.confederate.casualties +
+            combinedResults.confederate.casualties),
+        RANK_SIZE * RANKS_AVAILABLE_TO_FIGHT,
+      );
 
     // Run the melee subroutine.
     const meleeResults = this.meleeSubroutine(
@@ -490,12 +552,14 @@ export default class Encounter {
       unionUnitsFighting,
       confederateUnitsFighting,
     );
-    this.addTimeStepResults(meleeResults);
     // Update interim results.
     combinedResults.union.casualties += meleeResults.union.casualties;
     combinedResults.union.wounded += meleeResults.union.wounded;
     combinedResults.confederate.casualties +=
       meleeResults.confederate.casualties;
+
+    // Add interim results to the encounter's time step results.
+    this.addTimeStepResults(combinedResults);
 
     // Update the encounter's totals.
     this._union.casualties += combinedResults.union.casualties;
@@ -514,12 +578,13 @@ export default class Encounter {
     const unionUnitsFiring = Math.min(
         suppliesRef.value.bullets,
         suppliesRef.value.powder,
-        this.union.engaged - (this.union.casualties + this.union.wounded),
+        this.union.engaged - this.union.casualties,
         RANK_SIZE * RANKS_AVAILABLE_TO_FIGHT,
       ),
       confederateUnitsFiring = Math.min(
         this.confederate.engaged - this.confederate.casualties,
         RANK_SIZE * RANKS_AVAILABLE_TO_FIGHT,
+        this.confederacySupplyAvailability < 20 ? 0 : Infinity, // If the Confederacy's supply availability is less than 20%, they don't have enough supplies to fire.
       );
 
     // Run the ranged subroutine.
@@ -544,11 +609,12 @@ export default class Encounter {
   ) {
     // Calculate how many soldiers can fight this step.
     const unionUnitsFighting = Math.min(
-        this.union.engaged - (this.union.casualties + this.union.wounded),
+        this.union.engaged - this.union.casualties,
         RANK_SIZE * RANKS_AVAILABLE_TO_FIGHT,
       ),
       confederateUnitsFighting = Math.min(
         this.confederate.engaged - this.confederate.casualties,
+        RANK_SIZE * RANKS_AVAILABLE_TO_FIGHT,
       );
 
     // Run the melee subroutine.
@@ -568,5 +634,10 @@ export default class Encounter {
   public advance() {
     if (++this._state > EncounterState.MELEE_ONLY)
       this._state = EncounterState.MELEE_ONLY;
+  }
+
+  public retract() {
+    if (--this._state < EncounterState.RANGED_MELEE)
+      this._state = EncounterState.RANGED_MELEE;
   }
 }

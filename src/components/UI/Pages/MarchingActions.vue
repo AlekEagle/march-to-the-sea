@@ -6,9 +6,9 @@
   >
     <!-- Absolutely positioned items -->
     <span id="destination">
-      Departed from: {{ game.previousDestination.name }}
+      Departed from: {{ game.previousDestination!.name }}
       <br />
-      Traveling to: {{ game.nextDestination.name }}
+      Traveling to: {{ game.nextDestination!.name }}
       <br />
       {{ game.distanceToNextDestination.toLocaleString() }} Miles left
     </span>
@@ -20,8 +20,13 @@
     <!-- End of absolutely positioned items -->
     <h1>Marching Actions</h1>
     <div class="action-buttons">
-      <button @click="game.march">March</button>
-      <button @click="game.advanceDay">Rest</button>
+      <button @click="game.march()" :disabled="game.autoMarch">March</button>
+      <button @click="toggleAutoMarch">
+        {{ game.autoMarch ? 'Stop' : 'Start' }} Auto March
+      </button>
+      <button @click="game.advanceDay()" :disabled="game.autoMarch"
+        >Rest</button
+      >
     </div>
   </MenuSlide>
 </template>
@@ -35,6 +40,7 @@
   import GameState from '@/data/GameState';
   // Other
   import { ref } from 'vue';
+  import { wait } from '@/utils/Wait';
 
   const menuSlide = ref<typeof MenuSlide>(),
     game = useGame();
@@ -43,9 +49,25 @@
     menuSlide.value?.show();
   }
 
+  function toggleAutoMarch() {
+    game.autoMarch = !game.autoMarch;
+    if (game.autoMarch) autoMarch();
+  }
+
+  async function autoMarch() {
+    if (!game.autoMarch) return;
+    game.march();
+    await wait(1000);
+    if (game.state === GameState.MARCHING && game.autoMarch) autoMarch();
+  }
+
   game.subscribe((state) => {
     if (state === GameState.MARCHING) show();
-    else menuSlide.value?.hide();
+    else {
+      // Reset auto marching
+      game.autoMarch = false;
+      menuSlide.value?.hide();
+    }
   });
 </script>
 

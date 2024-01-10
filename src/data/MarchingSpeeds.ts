@@ -1,18 +1,18 @@
 const MARCHING_SPEEDS = {
   leisurely: {
-    value: 2, // Miles per day
+    value: 4, // Miles per day
     exhaustionChance: 1, // Percent chance of a soldier becoming exhausted while marching at this pace (out of 100)
   },
   normal: {
-    value: 4,
+    value: 6,
     exhaustionChance: 2,
   },
   fast: {
-    value: 6,
+    value: 8,
     exhaustionChance: 8,
   },
   grueling: {
-    value: 8,
+    value: 10,
     exhaustionChance: 20,
   },
 };

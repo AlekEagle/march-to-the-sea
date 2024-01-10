@@ -82,6 +82,7 @@
             of your infected soldiers died.
           </p>
         </div>
+        <!-- Destination Action -->
         <div
           class="history-item"
           v-if="currentDayObserving[1].destinationAction"
@@ -89,6 +90,7 @@
           <h3>Action</h3>
           <p v-text="actionText" />
         </div>
+        <!-- March -->
         <div class="history-item" v-if="currentDayObserving[1].march">
           <h3>March</h3>
           <p
@@ -109,6 +111,63 @@
             "
           />
         </div>
+        <!-- Encounter -->
+        <div class="history-item" v-if="currentDayObserving[1].encounter">
+          <h3>Encounter</h3>
+          <h4>
+            The victor was
+            {{ victor }}.
+          </h4>
+          <p>
+            A battalion of
+            {{
+              currentDayObserving[1].encounter.union.engaged.toLocaleString()
+            }}
+            Union soldiers encountered about
+            {{
+              (
+                Math.round(
+                  currentDayObserving[1].encounter.confederate.engaged / 10,
+                ) * 10
+              ).toLocaleString()
+            }}
+            Confederate soldiers and fought for
+            {{ encounterDuration }}.
+          </p>
+          <p v-if="currentDayObserving[1].encounter.union.casualties > 0">
+            {{
+              currentDayObserving[1].encounter.union.casualties.toLocaleString()
+            }}
+            Union soldiers were killed.
+          </p>
+          <p v-if="currentDayObserving[1].encounter.union.wounded > 0">
+            {{
+              currentDayObserving[1].encounter.union.wounded.toLocaleString()
+            }}
+            Union soldiers were wounded.{{
+              currentDayObserving[1].encounter.victory !==
+              EncounterVictory.UNION_VICTORY
+                ? ' However, because of the retreat of the Union, they have been left to die.'
+                : ''
+            }}
+          </p>
+          <p v-if="currentDayObserving[1].encounter.union.bullets > 0">
+            The Union used
+            {{
+              currentDayObserving[1].encounter.union.bullets.toLocaleString()
+            }}
+            pouches of bullets and
+            {{ currentDayObserving[1].encounter.union.powder.toLocaleString() }}
+            pouches of powder.
+          </p>
+          <p v-if="currentDayObserving[1].encounter.confederate.casualties > 0">
+            {{
+              currentDayObserving[1].encounter.confederate.casualties.toLocaleString()
+            }}
+            Confederate soldiers were killed.
+          </p>
+          <!-- TODO: Add Time step information during the encounter -->
+        </div>
       </div>
     </template>
     <h2 v-else>There isn't any daily history yet...</h2>
@@ -124,6 +183,7 @@
   import GameState from '@/data/GameState';
   import DestinationActions from '@/data/DestinationActions';
   import DESTINATIONS from '@/data/Destinations';
+  import { EncounterVictory } from '@/data/Encounter';
   // Other
   import { ref, computed } from 'vue';
   import GameDate from '@/data/GameDate';
@@ -165,6 +225,28 @@
           return `You destroyed the industry.`;
         default:
           return null;
+      }
+    }),
+    encounterDuration = computed(() => {
+      if (currentDayObserving.value === null) return null;
+      if (currentDayObserving.value[1].encounter === null) return null;
+      const minutes = currentDayObserving.value[1].encounter.duration * 20;
+      const hours = Math.floor(minutes / 60);
+      const remainingMinutes = minutes % 60;
+      return `${hours > 0 ? `${hours} hours` : ''}${
+        remainingMinutes > 0 ? ` ${remainingMinutes} minutes` : ''
+      }`;
+    }),
+    victor = computed(() => {
+      if (currentDayObserving.value === null) return null;
+      if (currentDayObserving.value[1].encounter === null) return null;
+      switch (currentDayObserving.value[1].encounter.victory!) {
+        case EncounterVictory.UNION_VICTORY:
+          return 'The Union';
+        case EncounterVictory.CONFEDERATE_VICTORY:
+          return 'The Confederacy';
+        case EncounterVictory.DRAW:
+          return 'No one';
       }
     });
 

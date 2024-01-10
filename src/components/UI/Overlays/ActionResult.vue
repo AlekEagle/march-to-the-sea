@@ -57,7 +57,7 @@
               game.currentDestination!,
               DestinationActions.KILL_ALL_CIVILIANS,
             ).civiliansKilled as number
-          ).toLocaleString()} civilians. This has negatively affected the Confederacy's morale and slightly affected their supply availability.`;
+          ).toLocaleString()} civilians. You got most of them but some hid well. This has negatively affected the Confederacy's morale and slightly affected their supply availability.`;
         case DestinationActions.KILL_TOWN_LEADERS:
           return `You killed ${(
             game.getDestinationAction(

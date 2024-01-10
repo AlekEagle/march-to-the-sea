@@ -15,6 +15,9 @@ enum GameState {
   // == Encounters ==
   ENCOUNTER_INTRO,
   ENCOUNTER,
+  ENCOUNTER_RESULT,
+  // == End of Game ==
+  END,
   // == Misc. ==
   MILITARY_INFO,
   OPTIONS,

@@ -20,7 +20,10 @@ import SubscriptionService, {
 } from '@/utils/SubscriptionService';
 import { useToast, TYPE as ToastType, POSITION } from 'vue-toastification';
 import { ToastID } from 'vue-toastification/dist/types/types';
-import Encounter, { EncounterResults } from '@/data/Encounter';
+import Encounter, {
+  EncounterResults,
+  EncounterVictory,
+} from '@/data/Encounter';
 
 // === Types ===
 
@@ -69,15 +72,28 @@ export type MedkitResults = {
   healedWounded: number;
   healedInfected: number;
 };
+
+export interface EncounterDayResults extends EncounterResults {
+  moraleChangeUnion: number;
+  moraleChangeConfederacy: number;
+}
+
 export type DailyResults = {
   day: DayResults | null;
   march: MarchResults | null;
   destinationAction: DestinationActionsPointer | null;
   medkit: MedkitResults | null;
-  encounter: EncounterResults | null;
+  encounter: EncounterDayResults | null;
 };
 
 export type DailyResultsRecord = [GameDateState, DailyResults];
+
+export enum GameOverReason {
+  INSUFFICIENT_UNITS,
+  INSUFFICIENT_MORALE,
+  SAVANNAH_DEFEAT,
+  SAVANNAH_VICTORY,
+}
 
 const useGame = defineStore('game-state-machine', () => {
   // Internal Toast Variables & Methods
@@ -87,9 +103,9 @@ const useGame = defineStore('game-state-machine', () => {
   const state = ref(GameState.INTRO),
     // == Military Forces ==
     // Union data
-    union = ref(new MilitaryForce(62_000, 100, 1, 29, 35, true)),
+    union = ref(new MilitaryForce(62_000, 75, 1, 29, 35, true)),
     // Confederacy data
-    confederacy = ref(new MilitaryForce(16_000, 75, 2, 34, 25, false)),
+    confederacy = ref(new MilitaryForce(16_000, 65, 3, 34, 25, false)),
     // == Game State Variables ==
     money = ref(Constants.DEFAULT_MONEY),
     days = ref(new GameDate(Months.November, 15)),
@@ -108,6 +124,8 @@ const useGame = defineStore('game-state-machine', () => {
     // Daily results for historical data
     dailyResults = ref<DailyResultsRecord[]>([]),
     encounter = ref<Encounter | null>(null),
+    gameOverReason = ref<GameOverReason | null>(null),
+    autoMarch = ref(false),
     // === Computed Values ===
     // == Destinations ==
     // Destinations that have been visited
@@ -131,7 +149,7 @@ const useGame = defineStore('game-state-machine', () => {
       () => visitedDestinations.value[visitedDestinations.value.length - 1],
     ),
     // The next destination to visit
-    nextDestination = computed<Destination>(
+    nextDestination = computed<Destination | undefined>(
       () => unvisitedDestinations.value[0],
     ),
     distanceToNextDestination = computed<number>(() => {
@@ -381,7 +399,7 @@ const useGame = defineStore('game-state-machine', () => {
 
   // Add the results of an encounter to the daily results
   function addDailyEncounterResults(
-    results: EncounterResults,
+    results: EncounterDayResults,
     day: GameDateState,
   ) {
     // Check if there are already results for this day
@@ -429,9 +447,9 @@ const useGame = defineStore('game-state-machine', () => {
   }
 
   // March and calculate the results of the march.
-  function march() {
+  function march(reverse: boolean = false) {
     // Debounce the march button.
-    if (state.value !== GameState.MARCHING) return;
+    if (state.value !== GameState.MARCHING && !reverse) return;
     // Create a variable to store the results of the march.
     const results = {
       distanceTraveled: 0,
@@ -439,14 +457,25 @@ const useGame = defineStore('game-state-machine', () => {
       deadExhaustedSoldiers: 0,
     };
     // Calculate the distance we'll travel.
-    results.distanceTraveled = Math.min(
-      MARCHING_SPEEDS[marchSpeed.value].value,
-      distanceToNextDestination.value,
-    );
+    // If we are marching in reverse, reverse the march speed.
+    if (reverse)
+      results.distanceTraveled = Math.max(
+        -MARCHING_SPEEDS[marchSpeed.value].value,
+        -(
+          distance.value -
+          visitedDestinations.value[visitedDestinations.value.length - 2]
+            .distance
+        ),
+      );
+    else
+      results.distanceTraveled = Math.min(
+        MARCHING_SPEEDS[marchSpeed.value].value,
+        distanceToNextDestination.value,
+      );
     // Update the distance.
     distance.value += results.distanceTraveled;
     // Update the nutrition of the soldiers based on the distance traveled. (1 mile = 1 nutrition)
-    union.value.nutrition -= results.distanceTraveled;
+    union.value.nutrition -= Math.abs(results.distanceTraveled);
 
     // Calculate the number of soldiers who become exhausted.
     const exhaustionChance = Math.floor(
@@ -475,11 +504,13 @@ const useGame = defineStore('game-state-machine', () => {
     // Add the newly exhausted soldiers to the number of exhausted soldiers.
     union.value.exhausted += results.exhaustedSoldiers;
 
-    // TODO: Add a chance for the Union to encounter a Confederate force and engage in combat.
-
     // If we have reached the next destination, set the game state to DESTINATION_INTRO.
-    if (currentDestination.value !== null)
+    if (currentDestination.value !== null && !reverse)
       state.value = GameState.DESTINATION_INTRO;
+
+    // If we have reached a destination, disable auto march if it is enabled.
+    if (currentDestination.value !== null && autoMarch.value)
+      autoMarch.value = false;
 
     // Add march results to the daily results.
     addDailyMarchResults(results, days.value.state);
@@ -573,7 +604,19 @@ const useGame = defineStore('game-state-machine', () => {
     union.value.infected = results.infectedWoundedSoldiers;
     union.value.alive += results.recoveredWoundedSoldiers;
     // Allow the Confederacy to recover a small amount of morale.
-    confederacy.value.morale += 2;
+    if (confederacy.value.morale <= 80)
+      confederacy.value.morale += Math.floor(
+        calibrateLinear(confederacy.value.morale, [
+          {
+            input: 0,
+            output: 5,
+          },
+          {
+            input: 80,
+            output: 1,
+          },
+        ]),
+      );
     // Add day results to the daily results.
     addDailyDayResults(results, days.value.state);
     // Advance the day.
@@ -582,6 +625,17 @@ const useGame = defineStore('game-state-machine', () => {
     skipRationing.value = !RATION_FREQUENCIES[
       rationFrequency.value
     ].rationRequirement(days.value.elapsed);
+
+    // If the Union has less soldiers than the Confederacy, the Union loses.
+    if (union.value.alive < confederacy.value.alive) {
+      state.value = GameState.END;
+      gameOverReason.value = GameOverReason.INSUFFICIENT_UNITS;
+    }
+    // If the Union's morale is 0, the Union loses.
+    if (union.value.morale <= 0) {
+      state.value = GameState.END;
+      gameOverReason.value = GameOverReason.INSUFFICIENT_MORALE;
+    }
     // Run the end of day summary toast function.
     endOfDaySummaryToast();
     // Return the results of the day.
@@ -592,24 +646,74 @@ const useGame = defineStore('game-state-machine', () => {
     // Get yesterday's results.
     const yesterdayResults = dailyResults.value[dailyResults.value.length - 1];
 
-    // If any of the soldiers had their health status changed, notify the player.
-    if (
-      (yesterdayResults[1].day &&
-        (yesterdayResults[1].day.recoveredWoundedSoldiers > 0 ||
-          yesterdayResults[1].day.infectedWoundedSoldiers > 0 ||
-          yesterdayResults[1].day.recoveredExhaustedSoldiers > 0 ||
-          yesterdayResults[1].day.deadInfectedSoldiers > 0 ||
-          yesterdayResults[1].day.starvedUnits.alive > 0 ||
-          yesterdayResults[1].day.starvedUnits.exhausted > 0 ||
-          yesterdayResults[1].day.starvedUnits.wounded > 0 ||
-          yesterdayResults[1].day.starvedUnits.infected > 0)) ||
-      (yesterdayResults[1].march &&
-        (yesterdayResults[1].march.exhaustedSoldiers > 0 ||
-          yesterdayResults[1].march.deadExhaustedSoldiers > 0))
-    ) {
+    const recoveredSoldiers = yesterdayResults[1].day
+        ? yesterdayResults[1].day.recoveredWoundedSoldiers +
+          yesterdayResults[1].day.recoveredExhaustedSoldiers
+        : -1,
+      starvedSoldiers = yesterdayResults[1].day
+        ? yesterdayResults[1].day.starvedUnits.alive +
+          yesterdayResults[1].day.starvedUnits.exhausted +
+          yesterdayResults[1].day.starvedUnits.wounded +
+          yesterdayResults[1].day.starvedUnits.infected
+        : -1,
+      deadInfectedSoldiers = yesterdayResults[1].day
+        ? yesterdayResults[1].day.deadInfectedSoldiers
+        : -1,
+      infectedSoldiers = yesterdayResults[1].day
+        ? yesterdayResults[1].day.infectedWoundedSoldiers
+        : -1,
+      exhaustedSoldiers = yesterdayResults[1].march
+        ? yesterdayResults[1].march.exhaustedSoldiers
+        : -1,
+      deadExhaustedSoldiers = yesterdayResults[1].march
+        ? yesterdayResults[1].march.deadExhaustedSoldiers
+        : -1;
+
+    // If any soldiers recovered from injuries, notify the player.
+    if (recoveredSoldiers > 0) {
       showToast(
-        'Yesterday, your soldiers experienced some changes in their health status. You can view the details in the military status panel.',
+        `Yesterday, ${recoveredSoldiers} soldiers recovered from exhaustion or wounds.`,
         'INFO',
+      );
+    }
+
+    // If any soldiers starved, notify the player.
+    if (starvedSoldiers > 0) {
+      showToast(
+        `Yesterday, ${starvedSoldiers} soldiers starved to death.`,
+        'WARNING',
+      );
+    }
+
+    // If any soldiers died from infection, notify the player.
+    if (deadInfectedSoldiers > 0) {
+      showToast(
+        `Yesterday, ${deadInfectedSoldiers} soldiers died from infection.`,
+        'WARNING',
+      );
+    }
+
+    // If any soldiers became infected, notify the player.
+    if (infectedSoldiers > 0) {
+      showToast(
+        `Yesterday, ${infectedSoldiers} soldiers developed infections due to their wounds.`,
+        'WARNING',
+      );
+    }
+
+    // If any soldiers became exhausted, notify the player.
+    if (exhaustedSoldiers > 0) {
+      showToast(
+        `Yesterday, ${exhaustedSoldiers} soldiers became exhausted from overexertion.`,
+        'INFO',
+      );
+    }
+
+    // If any soldiers died from exhaustion, notify the player.
+    if (deadExhaustedSoldiers > 0) {
+      showToast(
+        `Yesterday, ${deadExhaustedSoldiers} soldiers died from overexertion while already exhausted.`,
+        'WARNING',
       );
     }
   }
@@ -710,6 +814,7 @@ const useGame = defineStore('game-state-machine', () => {
       ]),
     );
     confederacy.value.morale -= results.moraleChange;
+    union.value.morale += results.moraleChange;
     // Save the action performed, and the number of civilians killed.
     addDestinationAction(
       currentDestination.value,
@@ -741,6 +846,7 @@ const useGame = defineStore('game-state-machine', () => {
     // Calculate how much that affects the Confederacy's morale.
     results.moraleChange = Math.floor(confederacy.value.morale / 8 / 2);
     confederacy.value.morale -= results.moraleChange;
+    union.value.morale += results.moraleChange;
     // Save the action performed.
     addDestinationAction(
       currentDestination.value,
@@ -773,6 +879,7 @@ const useGame = defineStore('game-state-machine', () => {
     // Calculate how much that affects the Confederacy's morale.
     results.moraleChange = Math.floor(confederacy.value.morale / 8 / 2);
     confederacy.value.morale -= results.moraleChange;
+    union.value.morale += results.moraleChange;
     // Save the action performed.
     addDestinationAction(
       currentDestination.value,
@@ -805,6 +912,7 @@ const useGame = defineStore('game-state-machine', () => {
     // Calculate how much that affects the Confederacy's morale.
     results.moraleChange = Math.floor(confederacy.value.morale / 8 / 2);
     confederacy.value.morale -= results.moraleChange;
+    union.value.morale += results.moraleChange;
     // Save the action performed.
     addDestinationAction(
       currentDestination.value,
@@ -836,6 +944,7 @@ const useGame = defineStore('game-state-machine', () => {
     // Calculate how much that affects the Confederacy's morale.
     results.moraleChange = Math.floor(confederacy.value.morale / 8 / 2);
     confederacy.value.morale -= results.moraleChange;
+    union.value.morale += results.moraleChange;
     // Save the action performed.
     addDestinationAction(
       currentDestination.value,
@@ -858,32 +967,93 @@ const useGame = defineStore('game-state-machine', () => {
       union.value.wounded -= amount;
       union.value.alive += amount;
       results.healedWounded = amount;
+      showToast(`You treated ${amount} wounded soldiers.`, 'SUCCESS');
     } else if (injuriesToHeal === 'infected') {
       union.value.infected -= amount;
       union.value.alive += amount;
       results.healedInfected = amount;
+      showToast(`You treated ${amount} infected soldiers.`, 'SUCCESS');
     }
     addDailyMedkitResults(results, days.value.state);
     return true;
+  }
+
+  function onEncounterEnd(results: EncounterResults) {
+    let moraleChangeUnion = 0,
+      moraleChangeConfederacy = 0;
+    switch (results.victory!) {
+      case EncounterVictory.UNION_VICTORY:
+        moraleChangeUnion = 10;
+        moraleChangeConfederacy = -10;
+        break;
+      case EncounterVictory.CONFEDERATE_VICTORY:
+        moraleChangeUnion = -10;
+        moraleChangeConfederacy = 10;
+        break;
+      case EncounterVictory.DRAW:
+        moraleChangeUnion = -5;
+        moraleChangeConfederacy = -5;
+        break;
+    }
+    // Add the encounter results to the daily results.
+    addDailyEncounterResults(
+      {
+        ...results,
+        moraleChangeUnion,
+        moraleChangeConfederacy,
+      },
+      days.value.state,
+    );
+    // Advance the day. (Do this before applying the changes to the Union and Confederacy so that wounded soldiers don't immediately get infected or recover.)
+    advanceDay();
+    // Apply the morale of the encounter to the Union and Confederacy.
+    union.value.morale += moraleChangeUnion;
+    confederacy.value.morale += moraleChangeConfederacy;
+    // Apply casualties and wounded to the Union.
+    union.value.alive -= results.union.casualties + results.union.wounded;
+    union.value.dead += results.union.casualties;
+    // If the Union won, apply the wounded to the Union.
+    if (results.victory === EncounterVictory.UNION_VICTORY)
+      union.value.wounded += results.union.wounded;
+    // If the Union lost, this means the Union retreated, so they left their wounded behind to die.
+    else union.value.dead += results.union.wounded;
+    // Apply casualties to the Confederacy.
+    confederacy.value.alive -= results.confederate.casualties;
+    confederacy.value.dead += results.confederate.casualties;
+    // Apply the supply consumption of the encounter to the Union.
+    supplies.value.bullets -= results.union.bullets;
+    supplies.value.powder -= results.union.powder;
+    // Apply the nutrition consumption of the encounter to the Union.
+    union.value.nutrition -= results.duration;
+    // Set the game state to ENCOUNTER_RESULT.
+    state.value = GameState.ENCOUNTER_RESULT;
   }
 
   function shouldBeginEncounter(): boolean {
     if (currentDestination.value === null) return false;
     if (currentDestination.value.encounter === null) return false;
     if (!chance(currentDestination.value.encounter.chance)) return false;
-    const unionUnitsAvailable = Math.min(
+    const confederacyUnitsAvailable =
+        currentDestination.value.encounter.min === Infinity
+          ? confederacy.value.alive // If the encounter is infinite, all Confederacy soldiers can fight
+          : randomInt(
+              currentDestination.value.encounter.min,
+              currentDestination.value.encounter.max,
+            ),
+      unionUnitsAvailable = Math.min(
         union.value.alive, // Only alive healthy soldiers can fight
-        Constants.MAX_UNION_BATTALION_SIZE, // At most 4,000 union soldiers can fight
-      ),
-      confederacyUnitsAvailable = randomInt(
-        currentDestination.value.encounter.min,
-        currentDestination.value.encounter.max,
+        currentDestination.value.encounter.min !== Infinity
+          ? Math.round(confederacyUnitsAvailable / 100) * 100
+          : Infinity, // Only 4,000 Union soldiers can fight at a time (unless the encounter is infinite like in Savannah)
       );
 
     // Create the encounter.
     const newEncounter = new Encounter(
       unionUnitsAvailable,
       confederacyUnitsAvailable,
+      onEncounterEnd,
+      confederacySupplyAvailability.value,
+      !!(currentDestination.value.features & TownFeatures.FORT),
     );
     // Set the encounter.
     encounter.value = newEncounter;
@@ -898,6 +1068,31 @@ const useGame = defineStore('game-state-machine', () => {
       confederacy as Ref<MilitaryForce>,
       supplies,
     );
+  }
+
+  function advanceLine() {
+    if (encounter.value === null) return;
+    encounter.value.advance();
+    encounter.value.step(
+      union as Ref<MilitaryForce>,
+      confederacy as Ref<MilitaryForce>,
+      supplies,
+    );
+  }
+
+  function retractLine() {
+    if (encounter.value === null) return;
+    encounter.value.retract();
+    encounter.value.step(
+      union as Ref<MilitaryForce>,
+      confederacy as Ref<MilitaryForce>,
+      supplies,
+    );
+  }
+
+  function retreatFromEncounter() {
+    if (encounter.value === null) return;
+    encounter.value.retreat();
   }
 
   // === Toast Methods ===
@@ -944,6 +1139,8 @@ const useGame = defineStore('game-state-machine', () => {
     skipRationing,
     dailyResults,
     encounter,
+    gameOverReason,
+    autoMarch,
     visitedDestinations,
     unvisitedDestinations,
     previousDestination,
@@ -966,9 +1163,13 @@ const useGame = defineStore('game-state-machine', () => {
     destroyAgriculture,
     destroyIndustry,
     useMedkits,
+    // Encounter Methods
     shouldBeginEncounter,
     stepEncounter,
-    // Toast Variables & Methods
+    advanceLine,
+    retractLine,
+    retreatFromEncounter,
+    // Toast Methods
     showToast,
     hideToast,
   };

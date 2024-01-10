@@ -117,10 +117,7 @@ export default class MilitaryForce {
   }
 
   public get retreatThreshold(): number {
-    return (
-      this._baseRetreatThreshold +
-      Math.floor(this._baseRetreatThreshold * ((this._morale + 25) / 100))
-    );
+    return Math.floor(this._baseRetreatThreshold * ((this._morale + 25) / 100));
   }
 
   public get exhaustionSusceptibilityMultiplier(): number {
@@ -131,7 +128,7 @@ export default class MilitaryForce {
   }
 
   public ration(count: number) {
-    const addend = count * 5;
+    const addend = count * 8;
     const commit = () => {
       this._nutrition += addend;
       if (this._nutrition > 100) this._nutrition = 100;

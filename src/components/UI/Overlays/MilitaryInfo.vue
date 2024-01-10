@@ -89,14 +89,6 @@
       >
         Dead: {{ game.confederacy.dead.toLocaleString() }}
       </h4>
-      <h4>
-        Unfortunately, this is all you know about the Confederacy's military.
-      </h4>
-      <h4>
-        Hopefully, by the time you get to Savannah, you'll have done enough
-        damage to the Confederacy's military to make it easier for the Union to
-        force a surrender.
-      </h4>
     </template>
     <template v-else>
       <h2>How</h2>

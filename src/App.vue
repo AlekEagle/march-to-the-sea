@@ -5,6 +5,8 @@
   <DestinationIntro />
   <EncounterActions />
   <EncounterIntro />
+  <EncounterResult />
+  <EndScreen />
   <GameIntro />
   <InitialAnimation />
   <MarchingActions />
@@ -18,20 +20,22 @@
 
 <script lang="ts" setup>
   // Vue Components
-  import AboutGame from '@/components/UI/AboutGame.vue';
+  import AboutGame from '@/components/UI/Pages/AboutGame.vue';
   import DailyResultInfo from '@/components/UI/Overlays/DailyResultInfo.vue';
-  import DestinationActions from '@/components/UI/DestinationActions.vue';
-  import DestinationIntro from '@/components/UI/DestinationIntro.vue';
-  import EncounterActions from '@/components/UI/Overlays/EncounterActions.vue';
-  import EncounterIntro from '@/components/UI/EncounterIntro.vue';
-  import GameIntro from '@/components/UI/GameIntro.vue';
-  import InitialAnimation from '@/components/UI/InitialAnimation.vue';
-  import MarchingActions from '@/components/UI/MarchingActions.vue';
+  import DestinationActions from '@/components/UI/Pages/DestinationActions.vue';
+  import DestinationIntro from '@/components/UI/Pages/DestinationIntro.vue';
+  import EncounterActions from '@/components/UI/Pages/EncounterActions.vue';
+  import EncounterIntro from '@/components/UI/Pages/EncounterIntro.vue';
+  import EncounterResult from '@/components/UI/Pages/EncounterResult.vue';
+  import EndScreen from '@/components/UI/Pages/EndScreen.vue';
+  import GameIntro from '@/components/UI/Pages/GameIntro.vue';
+  import InitialAnimation from '@/components/UI/Pages/InitialAnimation.vue';
+  import MarchingActions from '@/components/UI/Pages/MarchingActions.vue';
   import MilitaryActionButtons from '@/components/UI/Overlays/MilitaryActionButtons.vue';
   import MilitaryInfo from '@/components/UI/Overlays/MilitaryInfo.vue';
   import MilitaryOptions from '@/components/UI/Overlays/MilitaryOptions.vue';
-  import RequisitionSupplies from '@/components/UI/RequisitionSupplies.vue';
-  import StartMenu from '@/components/UI/StartMenu.vue';
+  import RequisitionSupplies from '@/components/UI/Pages/RequisitionSupplies.vue';
+  import StartMenu from '@/components/UI/Pages/StartMenu.vue';
   import UseMedkitAction from '@/components/UI/Overlays/UseMedkitAction.vue';
   // Stores
   import useGame from '@/stores/GameStateMachine';
@@ -53,10 +57,17 @@
     }
   });
 
-  if (!game.isDebug)
-    window.addEventListener('beforeunload', (e) => {
-      e.preventDefault();
-      e.returnValue = '';
-      return '';
-    });
+  function preventUnload(e: BeforeUnloadEvent) {
+    e.preventDefault();
+    e.returnValue = '';
+    return '';
+  }
+
+  function removePreventUnload() {
+    window.removeEventListener('beforeunload', preventUnload);
+  }
+
+  if (!game.isDebug) window.addEventListener('beforeunload', preventUnload);
+
+  game.subscribe(removePreventUnload, GameState.END);
 </script>

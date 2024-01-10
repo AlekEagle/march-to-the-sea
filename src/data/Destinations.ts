@@ -64,9 +64,9 @@ const DESTINATIONS: Destination[] = [
     distance: 6,
     features: TownFeatures.RAILROADS | TownFeatures.AGRICULTURE,
     encounter: {
-      chance: 4,
-      min: 120,
-      max: 360,
+      chance: 8,
+      min: 240,
+      max: 480,
     },
     description:
       'Decatur is a small town just outside of Atlanta. It is home to a Confederate supply depot, and is the first stop on your journey.',
@@ -121,7 +121,11 @@ const DESTINATIONS: Destination[] = [
     name: 'Covington',
     distance: 58,
     features: TownFeatures.SUPPLY_DEPOT,
-    encounter: null,
+    encounter: {
+      chance: 30,
+      min: 480,
+      max: 960,
+    },
     description: 'A small supplies town with barely 1,000 people.',
     population: 1_000,
     supplies: {
@@ -240,7 +244,7 @@ const DESTINATIONS: Destination[] = [
       TownFeatures.AGRICULTURE,
     encounter: {
       chance: 20,
-      min: 600,
+      min: 800,
       max: 1_200,
     },
     description:
@@ -302,7 +306,7 @@ const DESTINATIONS: Destination[] = [
     features: TownFeatures.RAILROADS | TownFeatures.SUPPLY_DEPOT,
     encounter: {
       chance: 40,
-      min: 100,
+      min: 600,
       max: 1_000,
     },
     description:
@@ -419,8 +423,8 @@ const DESTINATIONS: Destination[] = [
     features: TownFeatures.RAILROADS | TownFeatures.SUPPLY_DEPOT,
     encounter: {
       chance: 20,
-      min: 10,
-      max: 100,
+      min: 700,
+      max: 1_900,
     },
     description:
       'A small town with less than 1,000 people. It is home to a Confederate supply depot and prison camp.',
@@ -450,8 +454,8 @@ const DESTINATIONS: Destination[] = [
     features: TownFeatures.FORT,
     encounter: {
       chance: 100,
-      min: 120,
-      max: 250,
+      min: 1_200,
+      max: 2_500,
     },
     description:
       'A Confederate fort on the Ogeechee River. It is home to a significant Confederate stronghold.',
@@ -515,11 +519,11 @@ if (import.meta.env.DEV) {
   DESTINATIONS.unshift({
     name: 'Test',
     distance: 1,
-    features: 0,
+    features: TownFeatures.FORT,
     encounter: {
       chance: 100,
-      min: 10_000,
-      max: 10_000,
+      min: 2_000,
+      max: 5_000,
     },
     description: 'This is a test destination',
     population: 1_000_000,
