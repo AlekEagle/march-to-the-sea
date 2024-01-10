@@ -194,7 +194,9 @@ const useGame = defineStore('game-state-machine', () => {
         destinationsWithDestroyedSupplyDepots * 14
       );
     }),
-    isDebug = computed<boolean>(() => import.meta.env.DEV);
+    isDebug = computed<boolean>(
+      () => import.meta.env.DEV && window.location.search.includes('debug'),
+    );
 
   // == Subscriptions ==
 
@@ -548,13 +550,13 @@ const useGame = defineStore('game-state-machine', () => {
       } else {
         showToast(
           'You do not have enough food to feed all of your soldiers. None of your soldiers were fed yesterday.',
-          'WARNING',
+          'INFO',
         );
       }
     } else
       showToast(
         'You have chosen to skip rationing. None of your soldiers were fed yesterday.',
-        'WARNING',
+        'INFO',
       );
     // Do starvation calculations.
     results.starvedUnits = union.value.doStarve();
@@ -673,7 +675,7 @@ const useGame = defineStore('game-state-machine', () => {
     if (recoveredSoldiers > 0) {
       showToast(
         `Yesterday, ${recoveredSoldiers} soldiers recovered from exhaustion or wounds.`,
-        'INFO',
+        'SUCCESS',
       );
     }
 
@@ -681,7 +683,7 @@ const useGame = defineStore('game-state-machine', () => {
     if (starvedSoldiers > 0) {
       showToast(
         `Yesterday, ${starvedSoldiers} soldiers starved to death.`,
-        'WARNING',
+        'ERROR',
       );
     }
 
@@ -689,7 +691,7 @@ const useGame = defineStore('game-state-machine', () => {
     if (deadInfectedSoldiers > 0) {
       showToast(
         `Yesterday, ${deadInfectedSoldiers} soldiers died from infection.`,
-        'WARNING',
+        'ERROR',
       );
     }
 
@@ -705,7 +707,7 @@ const useGame = defineStore('game-state-machine', () => {
     if (exhaustedSoldiers > 0) {
       showToast(
         `Yesterday, ${exhaustedSoldiers} soldiers became exhausted from overexertion.`,
-        'INFO',
+        'WARNING',
       );
     }
 
@@ -713,7 +715,7 @@ const useGame = defineStore('game-state-machine', () => {
     if (deadExhaustedSoldiers > 0) {
       showToast(
         `Yesterday, ${deadExhaustedSoldiers} soldiers died from overexertion while already exhausted.`,
-        'WARNING',
+        'ERROR',
       );
     }
   }

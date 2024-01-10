@@ -3,6 +3,8 @@
     ref="proBanner"
     :duration="2000"
     cancellable
+    full-size
+    style="position: absolute; z-index: 0"
     @cancelled="bodyClickEventHandler"
   >
     <img :src="professionalBanner" alt="Professional Banner" />
@@ -13,6 +15,8 @@
     :duration="2000"
     direction="right-to-left"
     cancellable
+    full-size
+    style="position: absolute; z-index: 0"
     @cancelled="bodyClickEventHandler"
   >
     <h1>An Idiots with Computers ™©® Production</h1>
@@ -22,6 +26,8 @@
     :duration="2000"
     direction="left-to-right"
     cancellable
+    full-size
+    style="position: absolute; z-index: 0"
     @cancelled="bodyClickEventHandler"
   >
     <h1>An Award Winning, Sad Excuse of a """"Video Game""""</h1>
@@ -31,6 +37,8 @@
     :duration="2000"
     direction="bottom-to-top"
     cancellable
+    full-size
+    style="position: absolute; z-index: 0"
     @cancelled="bodyClickEventHandler"
   >
     <h1>Coming Soon To Theaters and LaserDisc...</h1>
@@ -39,6 +47,8 @@
     ref="comingSoon2"
     :duration="2000"
     cancellable
+    full-size
+    style="position: absolute; z-index: 0"
     @cancelled="bodyClickEventHandler"
   >
     <h1>...and also to your local Blockbuster Video™©®</h1>
@@ -75,15 +85,15 @@
     // Reset shouldStop
     shouldStop.value = false;
     // Listen for clicks on the page
-    await proBanner.value?.begin();
+    await proBanner.value?.begin(true);
     // If the animation was stopped early, continue.
-    if (!shouldStop.value) await iwcProd.value?.begin();
+    if (!shouldStop.value) await iwcProd.value?.begin(true);
     // If the animation was stopped early, continue.
-    if (!shouldStop.value) await awardWinning.value?.begin();
+    if (!shouldStop.value) await awardWinning.value?.begin(true);
     // If the animation was stopped early, continue.
-    if (!shouldStop.value) await comingSoon.value?.begin();
+    if (!shouldStop.value) await comingSoon.value?.begin(true);
     // If the animation was stopped early, continue.
-    if (!shouldStop.value) await comingSoon2.value?.begin();
+    if (!shouldStop.value) await comingSoon2.value?.begin(true);
     // After the animation is finished, set the game state to the start menu.
     game.state = GameState.START_MENU;
   }

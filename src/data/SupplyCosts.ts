@@ -7,14 +7,14 @@ const SUPPLY_COSTS = {
   },
   bullets: {
     value: 33,
-    amount: 62_000,
+    amount: 1_000,
     name: 'Pouch of Bullets',
     description:
       '1 unit = 1 pouch of 20 bullets. A soldier can go through a pouch in about 20 minutes of combat.',
   },
   powder: {
     value: 27,
-    amount: 62_000,
+    amount: 1_000,
     name: 'Pouch of Gunpowder',
     description:
       '1 unit = 1 pouch of 20 charges of gunpowder. A soldier can go through a pouch in about 20 minutes of combat.',
