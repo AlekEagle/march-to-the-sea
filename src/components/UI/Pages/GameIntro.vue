@@ -57,6 +57,13 @@
       You will also need to manage your army's morale. If your army's morale
       drops too low, they will desert and you will lose the game.
     </h2>
+    <br />
+    <br />
+    <h2>
+      You have a ranged advantage over the Confederacy, but they have a melee
+      advantage over you. You will need to manage your army's position on the
+      battlefield to maximize your advantage and minimize theirs.
+    </h2>
     <h3>(Click anywhere to continue.)</h3>
   </EnterExitSlide>
   <EnterExitSlide
