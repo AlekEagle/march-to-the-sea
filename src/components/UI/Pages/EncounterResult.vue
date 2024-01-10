@@ -72,10 +72,11 @@
     // If the Union retreated, return to the previous destination
     else if (game.encounter!.results.victory !== EncounterVictory.UNION_VICTORY)
       game.march(true); // March in reverse
+    if (game.nextDestination !== undefined)
+      game.state = game.currentDestination
+        ? GameState.DESTINATION
+        : GameState.MARCHING;
     // Clear the encounter
-    game.state = game.currentDestination
-      ? GameState.DESTINATION
-      : GameState.MARCHING;
     game.encounter = null;
   }
 
