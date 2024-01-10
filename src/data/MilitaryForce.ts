@@ -146,6 +146,8 @@ export default class MilitaryForce {
   }
 
   public doStarve() {
+    // Subtract 1 from nutrition.
+    this._nutrition -= 1;
     // Calculate rate of starvation.
     const starvationRate = Math.floor(
       calibrateExponential(this.nutrition, [

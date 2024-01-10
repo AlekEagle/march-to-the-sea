@@ -19,7 +19,7 @@ app.use(createPinia());
 // Use vue-toastification as the toast library and configure it
 app.use(Toast, {
   transition: 'Vue-Toastification__slideBlurred',
-  maxToasts: 6,
+  maxToasts: 3,
   newestOnTop: true,
 });
 

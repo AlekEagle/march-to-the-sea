@@ -97,7 +97,7 @@ const DESTINATIONS: Destination[] = [
     encounter: null,
     description:
       "A tiny town with less than 250 people. The confederates aren't to be seen anywhere here.",
-    population: 290,
+    population: 220,
     supplies: {
       food: {
         min: 0,

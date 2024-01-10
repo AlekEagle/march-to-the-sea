@@ -550,7 +550,7 @@ const useGame = defineStore('game-state-machine', () => {
       } else {
         showToast(
           'You do not have enough food to feed all of your soldiers. None of your soldiers were fed yesterday.',
-          'INFO',
+          'WARNING',
         );
       }
     } else
@@ -676,6 +676,7 @@ const useGame = defineStore('game-state-machine', () => {
       showToast(
         `Yesterday, ${recoveredSoldiers} soldiers recovered from exhaustion or wounds.`,
         'SUCCESS',
+        10e3,
       );
     }
 
@@ -684,6 +685,7 @@ const useGame = defineStore('game-state-machine', () => {
       showToast(
         `Yesterday, ${starvedSoldiers} soldiers starved to death.`,
         'ERROR',
+        10e3,
       );
     }
 
@@ -692,6 +694,7 @@ const useGame = defineStore('game-state-machine', () => {
       showToast(
         `Yesterday, ${deadInfectedSoldiers} soldiers died from infection.`,
         'ERROR',
+        10e3,
       );
     }
 
@@ -700,6 +703,7 @@ const useGame = defineStore('game-state-machine', () => {
       showToast(
         `Yesterday, ${infectedSoldiers} soldiers developed infections due to their wounds.`,
         'WARNING',
+        10e3,
       );
     }
 
@@ -708,6 +712,7 @@ const useGame = defineStore('game-state-machine', () => {
       showToast(
         `Yesterday, ${exhaustedSoldiers} soldiers became exhausted from overexertion.`,
         'WARNING',
+        10e3,
       );
     }
 
@@ -716,6 +721,7 @@ const useGame = defineStore('game-state-machine', () => {
       showToast(
         `Yesterday, ${deadExhaustedSoldiers} soldiers died from overexertion while already exhausted.`,
         'ERROR',
+        10e3,
       );
     }
   }
